@@ -1,0 +1,12 @@
+# Claude Code
+.agents/
+skills-lock.json
+
+# System
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temp files
+*.tmp
+~$*
