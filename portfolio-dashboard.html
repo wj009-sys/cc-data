@@ -345,13 +345,13 @@ var basePositions = [
   { code:'588050', name:'科创50ETF',              targetWeight:5,  costPrice:1.838,   qty:60000,  cost:110280,    cat:'科创50',   catColor:'#c084fc' },
   { code:'159915', name:'易方达创业板ETF',        targetWeight:5,  costPrice:3.968,   qty:63000,  cost:249984,    cat:'创业板',   catColor:'#e879f9' },
   { code:'512890', name:'华泰柏瑞红利低波ETF',    targetWeight:5,  costPrice:1.150,   qty:218000, cost:250700,    cat:'红利低波', catColor:'#f472b6' },
-  { code:'511380', name:'可转债ETF',              targetWeight:10, costPrice:null,     qty:0,      cost:0,         cat:'可转债',   catColor:'#fb923c' },
+  { code:'511380', name:'可转债ETF',              targetWeight:10, costPrice:13.95,   qty:7200,   cost:100440.00, cat:'可转债',   catColor:'#fb923c' },
   { code:'511260', name:'国泰上证10年期国债ETF',  targetWeight:10, costPrice:135.645, qty:3700,   cost:501886.50, cat:'10年国债', catColor:'#34d399' },
   { code:'511010', name:'国泰上证5年期国债ETF',   targetWeight:10, costPrice:141.2121,qty:3500,   cost:494242.35, cat:'5年国债',  catColor:'#2dd4bf' },
   { code:'511360', name:'海富通中证短融ETF',      targetWeight:5,  costPrice:113.462, qty:2200,   cost:249616.40, cat:'短融',     catColor:'#22d3ee' },
   { code:'518880', name:'华安黄金ETF',            targetWeight:15, costPrice:9.3966,  qty:39800,  cost:373984.68, cat:'黄金',     catColor:'#fbbf24' },
   { code:'511880', name:'银华日利ETF',            targetWeight:5,  costPrice:null,     qty:0,      cost:0,         cat:'银华日利', catColor:'#a3a3a3' },
-  { code:'511990', name:'华宝添益ETF',            targetWeight:5,  costPrice:99.997,  qty:2500,   cost:249992.50, cat:'华宝添益', catColor:'#d4d4d4' }
+  { code:'511990', name:'华宝添益ETF',            targetWeight:5,  costPrice:null,     qty:0,      cost:0,         cat:'华宝添益', catColor:'#d4d4d4' }
 ];
 
 var transactions = [
@@ -369,7 +369,9 @@ var transactions = [
   { date:'2026-05-26', code:'518880', name:'华安黄金ETF',  price:9.455,   qty:8000,   amount:75640.00 },
   { date:'2026-05-27', code:'518880', name:'华安黄金ETF',  price:9.385,   qty:8000,   amount:75080.00 },
   { date:'2026-05-28', code:'518880', name:'华安黄金ETF',  price:9.150,   qty:8000,   amount:73200.00 },
-  { date:'2026-05-28', code:'511990', name:'华宝添益ETF',  price:99.997,  qty:2500,   amount:249992.50 }
+  { date:'2026-05-28', code:'511990', name:'华宝添益ETF',  price:99.997,  qty:2500,   amount:249992.50 },
+  { date:'2026-06-05', code:'511380', name:'可转债ETF',    price:13.95,   qty:7200,   amount:100440.00 },
+  { date:'2026-06-05', code:'511990', name:'华宝添益ETF',  price:100.005, qty:-2500,  amount:-250012.50 }
 ];
 
 var disciplineRules = [
@@ -402,7 +404,9 @@ var SEED_DAILY = [
   { date:'2026-05-28', pnl:5208.17,   cumulative:6027.31 },
   { date:'2026-05-29', pnl:4867.77,   cumulative:10895.08 },
   { date:'2026-06-01', pnl:-12219.53, cumulative:-1324.45 },
-  { date:'2026-06-02', pnl:8617.72,   cumulative:7293.27 }
+  { date:'2026-06-02', pnl:8617.72,   cumulative:7293.27 },
+  { date:'2026-06-03', pnl:3737.30,   cumulative:11030.57 },
+  { date:'2026-06-04', pnl:-9155.40,  cumulative:1875.17 }
 ];
 
 // ============================================================
@@ -739,20 +743,24 @@ function renderDailyPnlChart(dailyData) {
 function renderTransactions() {
   var txnBody = document.getElementById('txnBody');
   txnBody.innerHTML = '';
-  var totalBuy = 0;
+  var totalBuy = 0, totalSell = 0;
   transactions.forEach(function(t) {
-    totalBuy += t.amount;
+    var isBuy = t.qty > 0;
+    var badgeClass = isBuy ? 'buy' : 'sell';
+    var directionLabel = isBuy ? '买入' : '卖出';
+    if (isBuy) totalBuy += t.amount; else totalSell += Math.abs(t.amount);
     txnBody.innerHTML += '<tr>' +
       '<td class="txn-date">' + t.date + '</td>' +
       '<td><span class="txn-code-td">' + t.code + '</span></td>' +
-      '<td class="txn-name-td"><span class="txn-row-badge buy"></span>' + t.name + '</td>' +
+      '<td class="txn-name-td"><span class="txn-row-badge ' + badgeClass + '"></span>' + t.name + ' <span style="font-size:10px;color:var(--text-muted)">' + directionLabel + '</span></td>' +
       '<td class="txn-price">¥' + t.price.toLocaleString('zh-CN',{minimumFractionDigits:3}) + '</td>' +
-      '<td class="txn-qty">' + t.qty.toLocaleString() + '</td>' +
-      '<td class="txn-amount-td">¥' + t.amount.toLocaleString('zh-CN',{minimumFractionDigits:0}) + '</td></tr>';
+      '<td class="txn-qty">' + Math.abs(t.qty).toLocaleString() + '</td>' +
+      '<td class="txn-amount-td" style="color:' + (isBuy ? 'var(--red)' : 'var(--green)') + '">' + (isBuy ? '' : '-') + '¥' + Math.abs(t.amount).toLocaleString('zh-CN',{minimumFractionDigits:0}) + '</td></tr>';
   });
   document.getElementById('txnSummary').innerHTML =
     '<span>共 <strong>' + transactions.length + '</strong> 笔交易</span>' +
-    '<span>累计买入 <strong>¥' + totalBuy.toLocaleString('zh-CN',{minimumFractionDigits:0}) + '</strong></span>';
+    '<span>买入 <strong style="color:var(--red)">¥' + totalBuy.toLocaleString('zh-CN',{minimumFractionDigits:0}) + '</strong></span>' +
+    '<span>卖出 <strong style="color:var(--green)">¥' + totalSell.toLocaleString('zh-CN',{minimumFractionDigits:0}) + '</strong></span>';
 }
 
 function renderDisciplineCards() {
