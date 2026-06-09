@@ -245,7 +245,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="logo-area">
       <div class="logo-icon">📊</div>
       <div>
-        <div class="page-title">500万资产配置组合</div>
+        <div class="page-title">500万资产配置组合 <span style="font-size:10px;color:var(--text-muted);font-weight:400">v2026.06.09-r4</span></div>
         <div class="page-subtitle">投资仪表盘 · 实时行情驱动</div>
       </div>
     </div>
@@ -839,6 +839,15 @@ function refreshData(showLoadingFlag) {
 
   var codes = basePositions.map(function(p) { return p.code; });
   return fetchPrices(codes).then(function(prices) {
+    if (!prices) {
+      // API 失败：使用本地缓存，不执行 recordDailySnapshot 避免数据损坏
+      updateStatusBar('error', '行情获取失败，显示本地数据');
+      showLoading(false);
+      var history = loadDailyHistory();
+      renderDailyPnlChart(history);
+      return null;
+    }
+
     var positions = buildPositions(prices);
     positions = addWeightInfo(positions);
     var totalMv = positions.length > 0 ? positions[0].totalMv : 0;
