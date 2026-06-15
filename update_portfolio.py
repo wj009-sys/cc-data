@@ -370,6 +370,195 @@ def update_spreadsheet(prices: dict, trade_date_str: str):
     return True
 
 
+# ==== 仪表盘 HTML 同步 ====
+import re
+
+DASHBOARD_PATH = Path(r'd:\cc-data\portfolio-dashboard.html')
+
+# 仪表盘显示用元数据（名称、分类、颜色）
+DASHBOARD_META = {
+    510300: {"displayName": "华泰柏瑞沪深300ETF", "targetWeight": 15, "cat": "沪深300", "catColor": "#60a5fa"},
+    510500: {"displayName": "南方中证500ETF",     "targetWeight": 10, "cat": "中证500", "catColor": "#818cf8"},
+    588050: {"displayName": "科创50ETF",          "targetWeight": 5,  "cat": "科创50",  "catColor": "#c084fc"},
+    159915: {"displayName": "易方达创业板ETF",    "targetWeight": 5,  "cat": "创业板",  "catColor": "#e879f9"},
+    512890: {"displayName": "华泰柏瑞红利低波ETF","targetWeight": 5,  "cat": "红利低波","catColor": "#f472b6"},
+    511380: {"displayName": "可转债ETF",          "targetWeight": 10, "cat": "可转债",  "catColor": "#fb923c"},
+    511260: {"displayName": "国泰上证10年期国债ETF","targetWeight":10, "cat": "10年国债","catColor": "#34d399"},
+    511010: {"displayName": "国泰上证5年期国债ETF","targetWeight": 10, "cat": "5年国债", "catColor": "#2dd4bf"},
+    511360: {"displayName": "海富通中证短融ETF",  "targetWeight": 5,  "cat": "短融",    "catColor": "#22d3ee"},
+    518880: {"displayName": "华安黄金ETF",        "targetWeight": 15, "cat": "黄金",    "catColor": "#fbbf24"},
+    511880: {"displayName": "银华日利ETF",        "targetWeight": 5,  "cat": "银华日利","catColor": "#a3a3a3"},
+    511990: {"displayName": "华宝添益ETF",        "targetWeight": 5,  "cat": "华宝添益","catColor": "#d4d4d4"},
+}
+
+
+def sync_dashboard():
+    """
+    从 Excel 读取最新持仓/流水数据，同步写入 portfolio-dashboard.html
+    确保仪表盘网页的 basePositions / transactions 数组与 Excel 一致。
+    """
+    from openpyxl import load_workbook
+
+    if not FILE_PATH.exists():
+        print("  [WARN] Excel 不存在，跳过仪表盘同步")
+        return
+    if not DASHBOARD_PATH.exists():
+        print("  [WARN] 仪表盘 HTML 不存在，跳过同步")
+        return
+
+    print("  正在同步仪表盘 HTML...")
+    wb = load_workbook(FILE_PATH, data_only=True)
+    ws_sum = wb["汇总"]
+
+    # --- 1. 读取汇总表持仓数据 ---
+    positions = {}
+    for i, h in enumerate(HOLDINGS):
+        row = CODE_ROWS[i]
+        code = h["code"]
+        cost_price = ws_sum.cell(row=row, column=8).value   # H: 成本价
+        quantity = ws_sum.cell(row=row, column=9).value or 0  # I: 数量
+        cost_value = round(cost_price * quantity, 2) if cost_price and quantity else 0
+
+        meta = DASHBOARD_META.get(code, {})
+        positions[code] = {
+            "cost_price": cost_price,
+            "quantity": quantity,
+            "cost_value": cost_value,
+            "displayName": meta.get("displayName", h["name"]),
+            "targetWeight": meta.get("targetWeight", 0),
+            "cat": meta.get("cat", ""),
+            "catColor": meta.get("catColor", "#888"),
+        }
+
+    # 按 HOLDINGS 顺序生成 basePositions JS
+    pos_lines = []
+    for h in HOLDINGS:
+        p = positions[h["code"]]
+        cp = p["cost_price"]
+        cp_str = f"{cp}" if cp else "null"
+        line = (
+            f"  {{ code:'{h['code']}', name:'{p['displayName']}', "
+            f"targetWeight:{p['targetWeight']}, costPrice:{cp_str}, "
+            f"qty:{p['quantity']}, cost:{p['cost_value']}, "
+            f"cat:'{p['cat']}', catColor:'{p['catColor']}' }}"
+        )
+        pos_lines.append(line)
+
+    new_positions_block = "var basePositions = [\n" + ",\n".join(pos_lines) + "\n];"
+
+    # --- 2. 读取流水表 ---
+    ws_trade = wb["流水"]
+    txns = []
+    for row in ws_trade.iter_rows(min_row=2, values_only=True):
+        date_val, code, name, price, qty, amount = row[:6]
+        if not date_val or not code:
+            continue
+        # 处理日期格式
+        if isinstance(date_val, (date, datetime)):
+            date_str = date_val.strftime("%Y-%m-%d")
+        else:
+            date_str = str(date_val)[:10]
+        code_str = str(int(code)) if isinstance(code, float) else str(code)
+        name_str = str(name) if name else ""
+        price_val = float(price) if price else 0
+        qty_val = int(qty) if qty else 0
+        amount_val = float(amount) if amount else 0
+        txns.append({
+            "date": date_str, "code": code_str, "name": name_str,
+            "price": price_val, "qty": qty_val, "amount": amount_val,
+        })
+
+    txn_lines = []
+    for t in txns:
+        line = (
+            f"  {{ date:'{t['date']}', code:'{t['code']}', name:'{t['name']}', "
+            f"price:{t['price']}, qty:{t['qty']}, amount:{t['amount']} }}"
+        )
+        txn_lines.append(line)
+
+    new_txns_block = "var transactions = [\n" + ",\n".join(txn_lines) + "\n];"
+
+    # --- 3. 读取日报表，汇总每日浮动盈亏 ---
+    ws_daily = wb["日报"]
+    daily_totals = {}  # date_str -> total_floating_pnl
+    for row in ws_daily.iter_rows(min_row=2, values_only=True):
+        date_val = row[0]
+        pnl = row[9]  # J: 浮动盈亏
+        if not date_val:
+            continue
+        if isinstance(date_val, (date, datetime)):
+            date_str = date_val.strftime("%Y-%m-%d")
+        else:
+            raw = str(date_val).strip()
+            if len(raw) == 8 and raw.isdigit():
+                date_str = f"{raw[:4]}-{raw[4:6]}-{raw[6:8]}"
+            else:
+                date_str = raw[:10] if len(raw) >= 10 else raw
+        daily_totals[date_str] = daily_totals.get(date_str, 0) + (float(pnl) if pnl else 0)
+
+    wb.close()
+
+    # --- 4. 读取并更新 HTML ---
+    html = DASHBOARD_PATH.read_text(encoding="utf-8")
+
+    html = re.sub(
+        r'var basePositions = \[[\s\S]*?\n\];',
+        new_positions_block,
+        html,
+        count=1,
+    )
+    html = re.sub(
+        r'var transactions = \[[\s\S]*?\n\];',
+        new_txns_block,
+        html,
+        count=1,
+    )
+
+    # --- 5. SEED_DAILY 增量更新：解析已有条目 + 追加新日期 → 完整重建 ---
+    existing_entries = []  # [(date, pnl, cumulative), ...]
+    seed_match = re.search(r'var SEED_DAILY = \[([\s\S]*?)\n\];', html)
+    if seed_match:
+        entry_pattern = re.compile(r"date:'(\d{4}-\d{2}-\d{2})',\s*pnl:([-\d.]+),\s*cumulative:([-\d.]+)")
+        for m in entry_pattern.finditer(seed_match.group(1)):
+            existing_entries.append((m.group(1), float(m.group(2)), float(m.group(3))))
+
+    # 构建已有日期集合
+    existing_dates = {e[0] for e in existing_entries}
+    last_cumulative = existing_entries[-1][2] if existing_entries else 0
+
+    # 找出新日期，递增计算
+    new_dates = sorted(d for d in daily_totals if d not in existing_dates)
+    new_entries = []
+    prev_cum = last_cumulative
+    for d in new_dates:
+        cum = round(daily_totals[d], 2)
+        daily_pnl = round(cum - prev_cum, 2)
+        new_entries.append((d, daily_pnl, cum))
+        prev_cum = cum
+
+    # 合并并重建 SEED_DAILY
+    all_entries = existing_entries + new_entries
+    seed_lines = []
+    for date_str, pnl, cum in all_entries:
+        seed_lines.append(f"  {{ date:'{date_str}', pnl:{pnl}, cumulative:{cum} }}")
+    new_seed_block = "var SEED_DAILY = [\n" + ",\n".join(seed_lines) + "\n];"
+
+    html = re.sub(
+        r'var SEED_DAILY = \[[\s\S]*?\n\];',
+        new_seed_block,
+        html,
+        count=1,
+    )
+
+    if new_entries:
+        print(f"  [INFO] SEED_DAILY 追加 {len(new_entries)} 新日期: {[e[0] for e in new_entries]}")
+    else:
+        print(f"  [INFO] SEED_DAILY 无新日期需要追加")
+
+    DASHBOARD_PATH.write_text(html, encoding="utf-8")
+    print(f"  [OK] 仪表盘已同步 ({len(pos_lines)} 持仓, {len(txn_lines)} 笔交易, +{len(new_entries)} 新快照)")
+
+
 # ==== 主流程 ====
 def main():
     print(f"\n{'='*60}")
@@ -417,7 +606,13 @@ def main():
         traceback.print_exc()
         return 1
 
-    # 5. 保存缓存（记录最后更新时间）
+    # 5. 同步仪表盘 HTML
+    try:
+        sync_dashboard()
+    except Exception as e:
+        print(f"  [WARN] 仪表盘同步失败（不中断主流程）: {e}")
+
+    # 6. 保存缓存（记录最后更新时间）
     cache = {"last_update": datetime.now().isoformat(), "trade_date": trade_date_str}
     try:
         with open(CACHE_PATH, "wb") as f:

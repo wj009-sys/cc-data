@@ -340,42 +340,44 @@ var STORAGE_KEY_DAILY = 'pf_daily_pnl_v3';
 var STORAGE_KEY_LAST  = 'pf_last_snapshot_v3';
 
 var basePositions = [
-  { code:'510300', name:'华泰柏瑞沪深300ETF',     targetWeight:15, costPrice:4.885,   qty:153800, cost:751313,    cat:'沪深300',  catColor:'#60a5fa' },
-  { code:'510500', name:'南方中证500ETF',         targetWeight:10, costPrice:8.696,   qty:20000,  cost:173920,    cat:'中证500',  catColor:'#818cf8' },
-  { code:'588050', name:'科创50ETF',              targetWeight:5,  costPrice:1.838,   qty:60000,  cost:110280,    cat:'科创50',   catColor:'#c084fc' },
-  { code:'159915', name:'易方达创业板ETF',        targetWeight:5,  costPrice:3.968,   qty:63000,  cost:249984,    cat:'创业板',   catColor:'#e879f9' },
-  { code:'512890', name:'华泰柏瑞红利低波ETF',    targetWeight:5,  costPrice:1.150,   qty:218000, cost:250700,    cat:'红利低波', catColor:'#f472b6' },
-  { code:'511380', name:'可转债ETF',              targetWeight:10, costPrice:13.8644, qty:14500,  cost:201034,    cat:'可转债',   catColor:'#fb923c' },
-  { code:'511260', name:'国泰上证10年期国债ETF',  targetWeight:10, costPrice:135.645, qty:3700,   cost:501886.50, cat:'10年国债', catColor:'#34d399' },
-  { code:'511010', name:'国泰上证5年期国债ETF',   targetWeight:10, costPrice:141.2121,qty:3500,   cost:494242.35, cat:'5年国债',  catColor:'#2dd4bf' },
-  { code:'511360', name:'海富通中证短融ETF',      targetWeight:5,  costPrice:113.462, qty:2200,   cost:249616.40, cat:'短融',     catColor:'#22d3ee' },
-  { code:'518880', name:'华安黄金ETF',            targetWeight:15, costPrice:9.3302,  qty:47800,  cost:445983.56, cat:'黄金',     catColor:'#fbbf24' },
-  { code:'511880', name:'银华日利ETF',            targetWeight:5,  costPrice:null,     qty:0,      cost:0,         cat:'银华日利', catColor:'#a3a3a3' },
-  { code:'511990', name:'华宝添益ETF',            targetWeight:5,  costPrice:null,     qty:0,      cost:0,         cat:'华宝添益', catColor:'#d4d4d4' }
+  { code:'510300', name:'华泰柏瑞沪深300ETF', targetWeight:15, costPrice:4.885, qty:153800, cost:751313.0, cat:'沪深300', catColor:'#60a5fa' },
+  { code:'510500', name:'南方中证500ETF', targetWeight:10, costPrice:8.696, qty:20000, cost:173920.0, cat:'中证500', catColor:'#818cf8' },
+  { code:'588050', name:'科创50ETF', targetWeight:5, costPrice:1.838, qty:60000, cost:110280.0, cat:'科创50', catColor:'#c084fc' },
+  { code:'159915', name:'易方达创业板ETF', targetWeight:5, costPrice:3.968, qty:63000, cost:249984.0, cat:'创业板', catColor:'#e879f9' },
+  { code:'512890', name:'华泰柏瑞红利低波ETF', targetWeight:5, costPrice:1.15, qty:218000, cost:250700.0, cat:'红利低波', catColor:'#f472b6' },
+  { code:'511380', name:'可转债ETF', targetWeight:10, costPrice:13.8644, qty:14500, cost:201033.8, cat:'可转债', catColor:'#fb923c' },
+  { code:'511260', name:'国泰上证10年期国债ETF', targetWeight:10, costPrice:135.645, qty:3700, cost:501886.5, cat:'10年国债', catColor:'#34d399' },
+  { code:'511010', name:'国泰上证5年期国债ETF', targetWeight:10, costPrice:141.2121, qty:3500, cost:494242.35, cat:'5年国债', catColor:'#2dd4bf' },
+  { code:'511360', name:'海富通中证短融ETF', targetWeight:5, costPrice:113.462, qty:2200, cost:249616.4, cat:'短融', catColor:'#22d3ee' },
+  { code:'518880', name:'华安黄金ETF', targetWeight:15, costPrice:9.2327, qty:55800, cost:515184.66, cat:'黄金', catColor:'#fbbf24' },
+  { code:'511880', name:'银华日利ETF', targetWeight:5, costPrice:null, qty:0, cost:0, cat:'银华日利', catColor:'#a3a3a3' },
+  { code:'511990', name:'华宝添益ETF', targetWeight:5, costPrice:null, qty:0, cost:0, cat:'华宝添益', catColor:'#d4d4d4' }
 ];
 
 var transactions = [
-  { date:'2026-05-18', code:'511360', name:'短融ETF',      price:113.462, qty:2200,   amount:249616.40 },
-  { date:'2026-05-18', code:'518880', name:'华安黄金ETF',  price:9.498,   qty:15800,  amount:150068.40 },
-  { date:'2026-05-19', code:'511010', name:'五年国债ETF',  price:141.253, qty:800,    amount:113002.40 },
-  { date:'2026-05-21', code:'511260', name:'十年国债ETF',  price:135.645, qty:3700,   amount:501886.50 },
-  { date:'2026-05-21', code:'510300', name:'沪深300ETF',   price:4.942,   qty:70000,  amount:345940.00 },
-  { date:'2026-05-21', code:'159915', name:'创业板ETF',    price:3.968,   qty:63000,  amount:249984.00 },
-  { date:'2026-05-21', code:'510500', name:'中证500ETF',   price:8.696,   qty:20000,  amount:173920.00 },
-  { date:'2026-05-21', code:'510300', name:'沪深300ETF',   price:4.865,   qty:40000,  amount:194600.00 },
-  { date:'2026-05-21', code:'588050', name:'科创50ETF',    price:1.838,   qty:60000,  amount:110280.00 },
-  { date:'2026-05-21', code:'511010', name:'五年国债ETF',  price:141.200, qty:2700,   amount:381240.00 },
-  { date:'2026-05-25', code:'512890', name:'红利低波ETF',  price:1.150,   qty:218000, amount:250700.00 },
-  { date:'2026-05-26', code:'518880', name:'华安黄金ETF',  price:9.455,   qty:8000,   amount:75640.00 },
-  { date:'2026-05-27', code:'518880', name:'华安黄金ETF',  price:9.385,   qty:8000,   amount:75080.00 },
-  { date:'2026-05-28', code:'518880', name:'华安黄金ETF',  price:9.150,   qty:8000,   amount:73200.00 },
-  { date:'2026-05-28', code:'511990', name:'华宝添益ETF',  price:99.997,  qty:2500,   amount:249992.50 },
-  { date:'2026-06-05', code:'511380', name:'可转债ETF',    price:13.95,   qty:7200,   amount:100440.00 },
-  { date:'2026-06-05', code:'511990', name:'华宝添益ETF',  price:100.005, qty:-2500,  amount:-250012.50 },
-  { date:'2026-06-05', code:'510300', name:'沪深300ETF',   price:4.85,    qty:20000,   amount:97000 },
-  { date:'2026-06-08', code:'518880', name:'华安黄金ETF',  price:9.00,    qty:8000,    amount:72000 },
-  { date:'2026-06-08', code:'510300', name:'沪深300ETF',   price:4.78,    qty:23800,   amount:113764 },
-  { date:'2026-06-10', code:'511380', name:'可转债ETF',    price:13.78,   qty:7300,    amount:100594 }
+  { date:'2026-05-18', code:'511360', name:'短融ETF', price:113.462, qty:2200, amount:249616.4 },
+  { date:'2026-05-18', code:'518880', name:'华安黄金ETF', price:9.498, qty:15800, amount:150068.4 },
+  { date:'2026-05-19', code:'511010', name:'五年国债ETF', price:141.253, qty:800, amount:113002.4 },
+  { date:'2026-05-21', code:'511260', name:'十年国债ETF', price:135.645, qty:3700, amount:501886.5 },
+  { date:'2026-05-21', code:'510300', name:'沪深300ETF', price:4.942, qty:70000, amount:345940.0 },
+  { date:'2026-05-21', code:'159915', name:'创业板ETF', price:3.968, qty:63000, amount:249984.0 },
+  { date:'2026-05-21', code:'510500', name:'中证500ETF', price:8.696, qty:4000, amount:34784.0 },
+  { date:'2026-05-21', code:'510500', name:'中证500ETF', price:8.696, qty:16000, amount:139136.0 },
+  { date:'2026-05-21', code:'510300', name:'沪深300ETF', price:4.865, qty:40000, amount:194600.0 },
+  { date:'2026-05-21', code:'588050', name:'科创50ETF', price:1.838, qty:60000, amount:110280.0 },
+  { date:'2026-05-21', code:'511010', name:'五年国债ETF', price:141.2, qty:2700, amount:381240.0 },
+  { date:'2026-05-25', code:'512890', name:'华泰柏瑞红利低波ETF', price:1.15, qty:218000, amount:250700.0 },
+  { date:'2026-05-26', code:'518880', name:'华安黄金ETF', price:9.455, qty:8000, amount:75640.0 },
+  { date:'2026-05-27', code:'518880', name:'华安黄金ETF', price:9.385, qty:8000, amount:75080.0 },
+  { date:'2026-05-28', code:'518880', name:'华安黄金ETF', price:9.15, qty:8000, amount:73200.0 },
+  { date:'2026-05-28', code:'511990', name:'华宝添益ETF', price:99.997, qty:2500, amount:249992.5 },
+  { date:'2026-06-05', code:'511380', name:'可转债ETF', price:13.95, qty:7200, amount:100440.0 },
+  { date:'2026-06-05', code:'511990', name:'华宝添益ETF', price:100.005, qty:-2500, amount:-250012.5 },
+  { date:'2026-06-05', code:'510300', name:'沪深300ETF', price:4.85, qty:20000, amount:97000.0 },
+  { date:'2026-06-08', code:'518880', name:'华安黄金ETF', price:9.0, qty:8000, amount:72000.0 },
+  { date:'2026-06-08', code:'510300', name:'沪深300ETF', price:4.78, qty:23800, amount:113764.0 },
+  { date:'2026-06-10', code:'511380', name:'可转债ETF', price:13.78, qty:7300, amount:100594.0 },
+  { date:'2026-06-12', code:'518880', name:'华安黄金ETF', price:8.65, qty:8000, amount:69200.0 }
 ];
 
 var disciplineRules = [
@@ -398,23 +400,25 @@ var disciplineRules = [
 ];
 
 var SEED_DAILY = [
-  { date:'2026-05-19', pnl:283.60,    cumulative:283.60 },
-  { date:'2026-05-20', pnl:-1792.95,  cumulative:-1509.35 },
-  { date:'2026-05-21', pnl:-26051.75, cumulative:-27561.10 },
-  { date:'2026-05-22', pnl:-9026.55,  cumulative:-36587.65 },
-  { date:'2026-05-25', pnl:14419.45,  cumulative:-22168.20 },
-  { date:'2026-05-26', pnl:18291.75,  cumulative:-3876.45 },
-  { date:'2026-05-27', pnl:4695.59,   cumulative:819.14 },
-  { date:'2026-05-28', pnl:5208.17,   cumulative:6027.31 },
-  { date:'2026-05-29', pnl:4867.77,   cumulative:10895.08 },
+  { date:'2026-05-19', pnl:283.6, cumulative:283.6 },
+  { date:'2026-05-20', pnl:-1792.95, cumulative:-1509.35 },
+  { date:'2026-05-21', pnl:-26051.75, cumulative:-27561.1 },
+  { date:'2026-05-22', pnl:-9026.55, cumulative:-36587.65 },
+  { date:'2026-05-25', pnl:14419.45, cumulative:-22168.2 },
+  { date:'2026-05-26', pnl:18291.75, cumulative:-3876.45 },
+  { date:'2026-05-27', pnl:4695.59, cumulative:819.14 },
+  { date:'2026-05-28', pnl:5208.17, cumulative:6027.31 },
+  { date:'2026-05-29', pnl:4867.77, cumulative:10895.08 },
   { date:'2026-06-01', pnl:-12219.53, cumulative:-1324.45 },
-  { date:'2026-06-02', pnl:8617.72,   cumulative:7293.27 },
-  { date:'2026-06-03', pnl:3737.30,   cumulative:11030.57 },
-  { date:'2026-06-04', pnl:-7298.60,  cumulative:3731.97 },
-  { date:'2026-06-05', pnl:-26728.80, cumulative:-22996.83 },
+  { date:'2026-06-02', pnl:8617.72, cumulative:7293.27 },
+  { date:'2026-06-03', pnl:3737.3, cumulative:11030.57 },
+  { date:'2026-06-04', pnl:-7298.6, cumulative:3731.97 },
+  { date:'2026-06-05', pnl:-26728.8, cumulative:-22996.83 },
   { date:'2026-06-08', pnl:-46548.18, cumulative:-69545.01 },
-  { date:'2026-06-09', pnl:32691.70,  cumulative:-36853.31 },
-  { date:'2026-06-10', pnl:-28194.20, cumulative:-65047.51 }
+  { date:'2026-06-09', pnl:32691.7, cumulative:-36853.31 },
+  { date:'2026-06-10', pnl:-28194.2, cumulative:-65047.51 },
+  { date:'2026-06-11', pnl:-21264.4, cumulative:-86311.91 },
+  { date:'2026-06-15', pnl:24983.8, cumulative:-61328.11 }
 ];
 
 // ============================================================
