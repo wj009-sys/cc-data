@@ -281,8 +281,13 @@ def update_spreadsheet(prices: dict, trade_date_str: str):
             ws_summary.cell(row=row, column=13).value = 0
 
     # 更新表头日期
-    title_cell = ws_summary.cell(row=1, column=1)
-    # Keep original title structure, ensure date is recent
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    trade_day_str = datetime.strptime(trade_date_str, "%Y%m%d").strftime("%Y-%m-%d")
+    ws_summary.cell(row=1, column=1).value = f"更新日期: {today_str} (数据日期: {trade_day_str})"
+
+    # 确保日报有触发信号列标题
+    if ws_daily.cell(row=1, column=15).value is None:
+        ws_daily.cell(row=1, column=15).value = "触发信号"
 
     # --- 2. 信号检测 ---
     # 补全 holdings_data 中的 weight 信息
@@ -308,39 +313,56 @@ def update_spreadsheet(prices: dict, trade_date_str: str):
         ws_summary.cell(row=row, column=14).value = note if note else None
 
     # --- 3. 追加日报 sheet ---
+    # 日报列结构: A日期 B品种 C代码 D持仓股数 E成本价 F持仓成本 G今日收盘 H涨跌幅 I当前市值 J浮动盈亏 K盈亏% L目标权重 M实际权重 N偏离 O触发信号
     # 检查是否已存在当日数据
     today_short = trade_date_str  # YYYYMMDD
-    existing_dates = set()
+    existing_rows_to_delete = []
     for r in range(2, ws_daily.max_row + 1):
         dval = str(ws_daily.cell(row=r, column=1).value or "")
-        existing_dates.add(dval.replace("-", ""))
+        if dval.replace("-", "") == today_short:
+            existing_rows_to_delete.append(r)
 
-    if today_short in existing_dates or trade_date_str.replace("-", "") in existing_dates:
-        print(f"  [INFO] 日报已存在 {trade_date_str} 数据，跳过追加")
-    else:
-        next_row = ws_daily.max_row + 1
-        for hd in holdings_data:
-            code = hd["code"]
-            close = hd["close"]
-            cost_price = hd["cost_price"]
-            quantity = hd["quantity"]
-            pnl = round((close - cost_price) * quantity, 2) if (quantity and cost_price) else 0
-            pnl_pct = round((close - cost_price) / cost_price, 4) if (quantity and cost_price and cost_price > 0) else 0
-            ss = signals.get(code, [])
-            signal_str = " | ".join(ss) if ss else "—"
+    if existing_rows_to_delete:
+        # 删除已有当日数据行（从后往前删，避免行号漂移）
+        print(f"  [INFO] 删除已有 {trade_date_str} 数据 {len(existing_rows_to_delete)} 行")
+        for r in reversed(existing_rows_to_delete):
+            ws_daily.delete_rows(r)
 
-            deviation = hd.get("weight", 0) - hd.get("target_weight", 0)
+    # 追加新数据
+    next_row = ws_daily.max_row + 1
+    for hd in holdings_data:
+        code = hd["code"]
+        close = hd["close"]
+        cost_price = hd["cost_price"]
+        quantity = hd["quantity"]
+        pct_chg = hd.get("pct_chg", 0)  # 原始百分比值，如 1.41 表示 +1.41%
+        pnl = round((close - cost_price) * quantity, 2) if (quantity and cost_price) else 0
+        pnl_pct = round((close - cost_price) / cost_price, 4) if (quantity and cost_price and cost_price > 0) else 0
+        market_value = round(close * quantity, 2) if quantity else 0
+        cost_value = round(cost_price * quantity, 2) if (cost_price and quantity) else 0
+        ss = signals.get(code, [])
+        signal_str = " | ".join(ss) if ss else "—"
+        deviation = hd.get("weight", 0) - hd.get("target_weight", 0)
+        target_weight = hd.get("target_weight", 0)
 
-            ws_daily.cell(row=next_row, column=1).value = today_short
-            ws_daily.cell(row=next_row, column=2).value = hd["name"]
-            ws_daily.cell(row=next_row, column=3).value = str(code)
-            ws_daily.cell(row=next_row, column=8).value = close
-            ws_daily.cell(row=next_row, column=9).value = pnl
-            ws_daily.cell(row=next_row, column=10).value = pnl_pct
-            ws_daily.cell(row=next_row, column=14).value = signal_str
-            next_row += 1
+        ws_daily.cell(row=next_row, column=1).value = today_short         # A: 日期
+        ws_daily.cell(row=next_row, column=2).value = hd["name"]          # B: 品种
+        ws_daily.cell(row=next_row, column=3).value = str(code)           # C: 代码
+        ws_daily.cell(row=next_row, column=4).value = quantity if quantity else None  # D: 持仓股数
+        ws_daily.cell(row=next_row, column=5).value = cost_price if cost_price else None  # E: 成本价
+        ws_daily.cell(row=next_row, column=6).value = cost_value if cost_value else None  # F: 持仓成本
+        ws_daily.cell(row=next_row, column=7).value = close                # G: 今日收盘
+        ws_daily.cell(row=next_row, column=8).value = round(pct_chg / 100, 4) if pct_chg else None  # H: 涨跌幅(小数)
+        ws_daily.cell(row=next_row, column=9).value = market_value         # I: 当前市值
+        ws_daily.cell(row=next_row, column=10).value = pnl                 # J: 浮动盈亏
+        ws_daily.cell(row=next_row, column=11).value = pnl_pct             # K: 盈亏%
+        ws_daily.cell(row=next_row, column=12).value = target_weight       # L: 目标权重
+        ws_daily.cell(row=next_row, column=13).value = hd.get("weight")    # M: 实际权重
+        ws_daily.cell(row=next_row, column=14).value = round(deviation, 4) # N: 偏离
+        ws_daily.cell(row=next_row, column=15).value = signal_str          # O: 触发信号
+        next_row += 1
 
-        print(f"  [OK] 日报追加 {len(holdings_data)} 条记录 ({trade_date_str})")
+    print(f"  [OK] 日报追加 {len(holdings_data)} 条记录 ({trade_date_str})")
 
     # --- 4. 保存 ---
     wb.save(FILE_PATH)
