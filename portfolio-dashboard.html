@@ -336,8 +336,8 @@ tbody tr:last-child td { border-bottom: none; }
 //  CONFIGURATION
 // ============================================================
 var TOTAL_CAPITAL = 5000000;
-var STORAGE_KEY_DAILY = 'pf_daily_pnl_v3';
-var STORAGE_KEY_LAST  = 'pf_last_snapshot_v3';
+var STORAGE_KEY_DAILY = 'pf_daily_pnl_v4';
+var STORAGE_KEY_LAST  = 'pf_last_snapshot_v4';
 
 var basePositions = [
   { code:'510300', name:'华泰柏瑞沪深300ETF', targetWeight:15, costPrice:4.885, qty:153800, cost:751313.0, cat:'沪深300', catColor:'#60a5fa' },
@@ -372,7 +372,7 @@ var transactions = [
   { date:'2026-05-28', code:'518880', name:'华安黄金ETF', price:9.15, qty:8000, amount:73200.0 },
   { date:'2026-05-28', code:'511990', name:'华宝添益ETF', price:99.997, qty:2500, amount:249992.5 },
   { date:'2026-06-05', code:'511380', name:'可转债ETF', price:13.95, qty:7200, amount:100440.0 },
-  { date:'2026-06-05', code:'511990', name:'华宝添益ETF', price:100.005, qty:-2500, amount:-250012.5 },
+  { date:'2026-06-05', code:'511990', name:'华宝添益ETF', price:100.005, qty:-2500, amount:250012.5 },
   { date:'2026-06-05', code:'510300', name:'沪深300ETF', price:4.85, qty:20000, amount:97000.0 },
   { date:'2026-06-08', code:'518880', name:'华安黄金ETF', price:9.0, qty:8000, amount:72000.0 },
   { date:'2026-06-08', code:'510300', name:'沪深300ETF', price:4.78, qty:23800, amount:113764.0 },
@@ -418,7 +418,11 @@ var SEED_DAILY = [
   { date:'2026-06-09', pnl:32691.7, cumulative:-36853.31 },
   { date:'2026-06-10', pnl:-28194.2, cumulative:-65047.51 },
   { date:'2026-06-11', pnl:-21264.4, cumulative:-86311.91 },
-  { date:'2026-06-15', pnl:24983.8, cumulative:-61328.11 }
+  { date:'2026-06-12', pnl:24983.8, cumulative:-61328.11 },
+  { date:'2026-06-15', pnl:0.0, cumulative:-61328.11 },
+  { date:'2026-06-16', pnl:60023.6, cumulative:-1304.51 },
+  { date:'2026-06-17', pnl:18687.7, cumulative:17383.19 },
+  { date:'2026-06-18', pnl:6064.9, cumulative:23448.09 }
 ];
 
 // ============================================================
@@ -554,8 +558,24 @@ function isMarketOpen() {
   return t >= 570 && t <= 900; // 9:30-15:00
 }
 
+// 中国节假日（2026年，需年末更新下一年）
+var CN_HOLIDAYS_2026 = [
+  '2026-01-01','2026-01-02',
+  '2026-02-16','2026-02-17','2026-02-18','2026-02-19','2026-02-20',
+  '2026-04-06',
+  '2026-05-01','2026-05-04','2026-05-05',
+  '2026-06-19',
+  '2026-09-25',
+  '2026-10-01','2026-10-02','2026-10-05','2026-10-06','2026-10-07'
+];
+// 调休工作日（周六日补班，2026年需年末更新）
+var CN_WORKDAYS_2026 = [];
+
 function isTradingDay(date) {
   var d = date.getDay();
+  var ds = date.toISOString().slice(0, 10);
+  if (CN_HOLIDAYS_2026.indexOf(ds) >= 0) return false;
+  if (CN_WORKDAYS_2026.indexOf(ds) >= 0) return true;
   return d !== 0 && d !== 6;
 }
 
@@ -814,6 +834,11 @@ function showLoading(show) {
 // ============================================================
 function recordDailySnapshot(currentCumulative) {
   var history = loadDailyHistory();
+  var now = new Date();
+  // 非交易日不创建新快照，避免把盈亏归到节假日/周末
+  if (!isTradingDay(now)) {
+    return history;
+  }
   var today = todayStr();
   var existingIdx = -1;
   for (var i = 0; i < history.length; i++) {

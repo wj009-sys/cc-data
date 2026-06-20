@@ -189,6 +189,133 @@ def detect_portfolio_signals(total_pnl_pct: float, equity_weight: float) -> list
     return s
 
 
+# ==== 日报缺失交易日回补 ====
+def backfill_missing_trading_days(wb, ws_summary, ws_daily, latest_trade_date_str):
+    """
+    检查日报中缺失的交易日，自动回补。
+    防止因脚本漏跑导致走势图断档。
+    """
+    # 收集日报已有日期
+    existing_dates = set()
+    for row in range(2, ws_daily.max_row + 1):
+        dval = ws_daily.cell(row=row, column=1).value
+        if dval:
+            if isinstance(dval, (date, datetime)):
+                existing_dates.add(dval.strftime("%Y%m%d"))
+            else:
+                raw = str(dval).strip()
+                if len(raw) == 8 and raw.isdigit():
+                    existing_dates.add(raw)
+                elif len(raw) >= 10:
+                    existing_dates.add(raw[:10].replace("-", ""))
+
+    if not existing_dates:
+        return
+
+    latest_dt = datetime.strptime(latest_trade_date_str, "%Y%m%d").date()
+    earliest_str = min(existing_dates)
+    earliest_dt = datetime.strptime(earliest_str, "%Y%m%d").date()
+
+    # 找出缺失的交易日
+    missing_dates = []
+    d = earliest_dt + timedelta(days=1)
+    while d <= latest_dt:
+        d_str = d.strftime("%Y%m%d")
+        if is_trading_day(d) and d_str not in existing_dates:
+            missing_dates.append(d_str)
+        d = d + timedelta(days=1)
+
+    if not missing_dates:
+        return
+
+    print(f"  [INFO] 检测到 {len(missing_dates)} 个缺失交易日: {missing_dates}")
+
+    ts_codes = [h["ts"] for h in HOLDINGS]
+    for d_str in missing_dates:
+        print(f"    回补 {d_str}...")
+        prices = fetch_prices(ts_codes, d_str)
+        if not prices:
+            print(f"      [WARN] {d_str} 无行情数据，跳过")
+            continue
+
+        # 汇总当日浮动盈亏
+        total_mv = 0
+        total_cost = 0
+        rows_data = []
+        for i, h in enumerate(HOLDINGS):
+            row = CODE_ROWS[i]
+            ts_code = h["ts"]
+            cost_price = ws_summary.cell(row=row, column=8).value
+            quantity = ws_summary.cell(row=row, column=9).value or 0
+            target_weight = ws_summary.cell(row=row, column=5).value or 0
+
+            if ts_code in prices:
+                close = prices[ts_code]["close"]
+                pct_chg = prices[ts_code]["pct_chg"]
+            else:
+                close = ws_summary.cell(row=row, column=11).value or 0
+                pct_chg = 0
+
+            if quantity and quantity > 0 and cost_price and cost_price > 0:
+                mv = close * quantity
+                cost_v = cost_price * quantity
+                total_mv += mv
+                total_cost += cost_v
+                pnl = round((close - cost_price) * quantity, 2)
+                pnl_pct = round((close - cost_price) / cost_price, 4)
+            else:
+                mv = 0
+                cost_v = 0
+                pnl = 0
+                pnl_pct = 0
+
+            rows_data.append({
+                "code": h["code"], "name": h["name"], "close": close,
+                "cost_price": cost_price, "quantity": quantity,
+                "pct_chg": pct_chg, "pnl": pnl, "pnl_pct": pnl_pct,
+                "market_value": mv, "cost_value": cost_v,
+                "target_weight": target_weight,
+            })
+
+        # 计算权重
+        for rd in rows_data:
+            if total_mv > 0 and rd["quantity"] and rd["quantity"] > 0:
+                rd["weight"] = round(rd["market_value"] / total_mv, 4)
+            else:
+                rd["weight"] = 0
+            rd["deviation"] = round(rd["weight"] - rd["target_weight"], 4)
+
+        # 删除旧数据（如有）并追加
+        existing_rows = []
+        for r in range(2, ws_daily.max_row + 1):
+            dval = str(ws_daily.cell(row=r, column=1).value or "")
+            if dval.replace("-", "") == d_str:
+                existing_rows.append(r)
+        for r in reversed(existing_rows):
+            ws_daily.delete_rows(r)
+
+        next_row = ws_daily.max_row + 1
+        for rd in rows_data:
+            ws_daily.cell(row=next_row, column=1).value = d_str
+            ws_daily.cell(row=next_row, column=2).value = rd["name"]
+            ws_daily.cell(row=next_row, column=3).value = str(rd["code"])
+            ws_daily.cell(row=next_row, column=4).value = rd["quantity"] if rd["quantity"] else None
+            ws_daily.cell(row=next_row, column=5).value = rd["cost_price"] if rd["cost_price"] else None
+            ws_daily.cell(row=next_row, column=6).value = rd["cost_value"] if rd["cost_value"] else None
+            ws_daily.cell(row=next_row, column=7).value = rd["close"]
+            ws_daily.cell(row=next_row, column=8).value = round(rd["pct_chg"] / 100, 4) if rd["pct_chg"] else None
+            ws_daily.cell(row=next_row, column=9).value = rd["market_value"]
+            ws_daily.cell(row=next_row, column=10).value = rd["pnl"]
+            ws_daily.cell(row=next_row, column=11).value = rd["pnl_pct"]
+            ws_daily.cell(row=next_row, column=12).value = rd["target_weight"]
+            ws_daily.cell(row=next_row, column=13).value = rd["weight"]
+            ws_daily.cell(row=next_row, column=14).value = rd["deviation"]
+            ws_daily.cell(row=next_row, column=15).value = "—"
+            next_row += 1
+
+        print(f"      已追加 {len(rows_data)} 个品种 ({d_str})")
+
+
 # ==== Excel 更新 ====
 def update_spreadsheet(prices: dict, trade_date_str: str):
     """主更新逻辑"""
@@ -364,6 +491,9 @@ def update_spreadsheet(prices: dict, trade_date_str: str):
 
     print(f"  [OK] 日报追加 {len(holdings_data)} 条记录 ({trade_date_str})")
 
+    # --- 3.5 回补缺失的交易日日报数据 ---
+    backfill_missing_trading_days(wb, ws_summary, ws_daily, trade_date_str)
+
     # --- 4. 保存 ---
     wb.save(FILE_PATH)
     print(f"  [OK] 文件已保存: {FILE_PATH}")
@@ -463,6 +593,9 @@ def sync_dashboard():
         price_val = float(price) if price else 0
         qty_val = int(qty) if qty else 0
         amount_val = float(amount) if amount else 0
+        # 容错：公式缓存丢失时，用 price * abs(qty) 计算
+        if not amount_val and price_val and qty_val:
+            amount_val = round(price_val * abs(qty_val), 2)
         txns.append({
             "date": date_str, "code": code_str, "name": name_str,
             "price": price_val, "qty": qty_val, "amount": amount_val,
@@ -524,20 +657,40 @@ def sync_dashboard():
 
     # 构建已有日期集合
     existing_dates = {e[0] for e in existing_entries}
-    last_cumulative = existing_entries[-1][2] if existing_entries else 0
 
-    # 找出新日期，递增计算
+    # 找出新日期（Excel 有但 SEED_DAILY 没有的交易日）
     new_dates = sorted(d for d in daily_totals if d not in existing_dates)
-    new_entries = []
-    prev_cum = last_cumulative
-    for d in new_dates:
-        cum = round(daily_totals[d], 2)
-        daily_pnl = round(cum - prev_cum, 2)
-        new_entries.append((d, daily_pnl, cum))
-        prev_cum = cum
 
-    # 合并并重建 SEED_DAILY
-    all_entries = existing_entries + new_entries
+    if new_dates:
+        print(f"  [INFO] SEED_DAILY 追加 {len(new_dates)} 新日期: {new_dates}")
+        # 合并新日期（先用 Excel 累计值，pnl 暂置 0）
+        all_entries = existing_entries + [(d, 0, round(daily_totals[d], 2)) for d in new_dates]
+        # 按日期排序
+        all_entries.sort(key=lambda x: x[0])
+        # 过滤非交易日
+        filtered = []
+        for d_str, p, c in all_entries:
+            entry_date = date(int(d_str[:4]), int(d_str[5:7]), int(d_str[8:10]))
+            if is_trading_day(entry_date):
+                filtered.append((d_str, p, c))
+        # 重新计算 pnl（基于排序后的累计值增量）
+        all_entries = []
+        prev_cum = 0
+        for d_str, p, c in filtered:
+            new_pnl = round(c - prev_cum, 2)
+            all_entries.append((d_str, new_pnl, round(c, 2)))
+            prev_cum = c
+    else:
+        # 无新日期，过滤非交易日
+        all_entries = []
+        for d_str, p, c in existing_entries:
+            entry_date = date(int(d_str[:4]), int(d_str[5:7]), int(d_str[8:10]))
+            if is_trading_day(entry_date):
+                all_entries.append((d_str, p, c))
+        if len(all_entries) < len(existing_entries):
+            removed = [e[0] for e in existing_entries if e[0] not in {a[0] for a in all_entries}]
+            print(f"  [INFO] SEED_DAILY 移除非交易日条目: {removed}")
+
     seed_lines = []
     for date_str, pnl, cum in all_entries:
         seed_lines.append(f"  {{ date:'{date_str}', pnl:{pnl}, cumulative:{cum} }}")
@@ -550,13 +703,13 @@ def sync_dashboard():
         count=1,
     )
 
-    if new_entries:
-        print(f"  [INFO] SEED_DAILY 追加 {len(new_entries)} 新日期: {[e[0] for e in new_entries]}")
+    if new_dates:
+        print(f"  [INFO] SEED_DAILY 追加 {len(new_dates)} 新日期: {new_dates}")
     else:
         print(f"  [INFO] SEED_DAILY 无新日期需要追加")
 
     DASHBOARD_PATH.write_text(html, encoding="utf-8")
-    print(f"  [OK] 仪表盘已同步 ({len(pos_lines)} 持仓, {len(txn_lines)} 笔交易, +{len(new_entries)} 新快照)")
+    print(f"  [OK] 仪表盘已同步 ({len(pos_lines)} 持仓, {len(txn_lines)} 笔交易, +{len(new_dates)} 新快照)")
 
 
 # ==== 主流程 ====
