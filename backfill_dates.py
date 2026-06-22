@@ -10,7 +10,7 @@ from openpyxl import load_workbook
 from datetime import date, timedelta
 from pathlib import Path
 
-FILE_PATH = Path(r'd:\cc-data\500万资产配置组合2026.xlsx')
+FILE_PATH = Path(r'd:\cc-data\400万资产配置组合2026.xlsx')
 
 HOLDINGS = [
     {"code": 510300, "name": "沪深300ETF",        "ts": "510300.SH", "high_vol": False, "type": "equity"},

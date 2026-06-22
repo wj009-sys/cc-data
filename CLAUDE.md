@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | 文件 | 说明 |
 |------|------|
-| `500万资产配置组合2026.xlsx` | 主数据文件，含 4 个 sheet（投资纪要、汇总、流水、日报） |
+| `400万资产配置组合2026.xlsx` | 主数据文件，含 4 个 sheet（投资纪要、汇总、流水、日报） |
 | `update_portfolio.py` | 每日自动更新脚本，Tushare API 获取行情，更新汇总+日报，信号检测 |
 | `portfolio-dashboard.html` | 投资仪表盘，Chart.js 可视化（从 Excel 数据渲染） |
 | `500万资产配置方案（优化版）.docx` | 原始资产配置方案文档 |
@@ -32,7 +32,7 @@ python update_portfolio.py
 cat .claude/scheduled_tasks.json
 
 # 读取 Excel 数据（openpyxl，保留公式）
-python -c "from openpyxl import load_workbook; wb = load_workbook('500万资产配置组合2026.xlsx'); ..."
+python -c "from openpyxl import load_workbook; wb = load_workbook('400万资产配置组合2026.xlsx'); ..."
 ```
 
 ## 定时任务

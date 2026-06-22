@@ -24,7 +24,7 @@ if sys.platform == 'win32':
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # ==== 配置 ====
-FILE_PATH = Path(r'd:\cc-data\500万资产配置组合2026.xlsx')
+FILE_PATH = Path(r'd:\cc-data\400万资产配置组合2026.xlsx')
 CACHE_PATH = Path(r'd:\cc-data\.portfolio_cache.pkl')
 
 # 中国节假日（2026年，需年末更新下一年）
@@ -116,13 +116,32 @@ def fetch_prices(ts_codes: list, trade_date: str) -> dict:
 
 
 # ==== 信号检测 ====
-def detect_signals(holdings_data: list) -> dict:
+def detect_signals(holdings_data: list, trade_date_str: str = None) -> dict:
     """
     根据投资纪要规则检测触发信号。
     holdings_data: [{code, name, close, cost_price, quantity, weight, target_weight, pct_chg, type, high_vol}, ...]
+    trade_date_str: YYYYMMDD 格式的交易日期（用于判断半年度末）
     返回: {code: [signal_strings]}
     """
     signals = {}
+
+    # 判断是否为半年度末检查日 (6月/12月最后一个交易日)
+    is_semi_annual_check = False
+    if trade_date_str:
+        dt = datetime.strptime(trade_date_str, "%Y%m%d")
+        if dt.month in (6, 12):
+            # 检查该月后续是否还有交易日
+            check_day = dt.date()
+            has_more_trading_days = False
+            for d in range(1, 11):
+                future = check_day + timedelta(days=d)
+                if future.month != check_day.month:
+                    break
+                if is_trading_day(future):
+                    has_more_trading_days = True
+                    break
+            if not has_more_trading_days:
+                is_semi_annual_check = True
 
     for h in holdings_data:
         s = []
@@ -161,13 +180,11 @@ def detect_signals(holdings_data: list) -> dict:
                 if pnl_pct <= -0.15:
                     s.append(f"🔴统一止损：浮亏{pnl_pct:.1%} <= -15%，清仓观察40日")
 
-        # 四、组合再平衡
-        if abs(deviation) >= 0.10:
-            s.append(f"🔴再平衡紧急线：偏离{deviation:+.1%} >= ±10%")
-        elif abs(deviation) >= 0.07:
-            s.append(f"🟠再平衡触发线：偏离{deviation:+.1%} >= ±7%，强制调仓")
-        elif abs(deviation) >= 0.03:
-            s.append(f"📊权重预警偏离{deviation:+.1%}")
+        # 四、组合再平衡：仅半年度末检查 ±20% 相对阀值
+        if is_semi_annual_check and target > 0 and weight > 0:
+            rel_dev = (weight - target) / target
+            if abs(rel_dev) > 0.20:
+                s.append(f"🔄半年度再平衡：相对偏离{rel_dev:+.1%}，触发±20%阀值，调回目标权重")
 
         signals[code] = s
 
@@ -420,7 +437,7 @@ def update_spreadsheet(prices: dict, trade_date_str: str):
         hd["weight"] = ws_summary.cell(row=row, column=6).value or 0
         hd["target_weight"] = ws_summary.cell(row=row, column=5).value or 0
 
-    signals = detect_signals(holdings_data)
+    signals = detect_signals(holdings_data, trade_date_str)
 
     # 组合级别信号
     total_pnl_pct = (total_market_value - total_cost_value) / total_cost_value if total_cost_value > 0 else 0
