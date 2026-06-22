@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-500万资产配置组合 - 每日自动更新脚本
+400万资产配置组合 - 每日自动更新脚本
 用于 Windows 任务计划程序，在每个交易日 16:30 执行
 
 功能：
@@ -45,7 +45,6 @@ CN_WORKDAYS_2026 = set()
 # 持仓定义：代码 -> (名称, tushare_code, 高波动品种, 权益/固收/商品分类)
 HOLDINGS = [
     {"code": 510300, "name": "沪深300ETF",        "ts": "510300.SH", "high_vol": False, "type": "equity"},
-    {"code": 510500, "name": "中证500ETF",        "ts": "510500.SH", "high_vol": False, "type": "equity"},
     {"code": 588050, "name": "科创50ETF",         "ts": "588050.SH", "high_vol": True,  "type": "equity"},
     {"code": 159915, "name": "创业板ETF",         "ts": "159915.SZ", "high_vol": True,  "type": "equity"},
     {"code": 512890, "name": "红利低波ETF",       "ts": "512890.SH", "high_vol": False, "type": "equity"},
@@ -54,13 +53,11 @@ HOLDINGS = [
     {"code": 511010, "name": "5年国债ETF",        "ts": "511010.SH", "high_vol": False, "type": "bond"},
     {"code": 511360, "name": "短融ETF",           "ts": "511360.SH", "high_vol": False, "type": "bond"},
     {"code": 518880, "name": "黄金ETF",           "ts": "518880.SH", "high_vol": False, "type": "commodity"},
-    {"code": 511880, "name": "银华日利ETF",       "ts": "511880.SH", "high_vol": False, "type": "cash"},
-    {"code": 511990, "name": "华宝添益ETF",       "ts": "511990.SH", "high_vol": False, "type": "cash"},
 ]
 
 HOLDING_MAP = {h["code"]: h for h in HOLDINGS}
 # 汇总 sheet 中每个代码对应的行号（第2行开始，与 HOLDINGS 顺序一致）
-CODE_ROWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+CODE_ROWS = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 # ==== 交易日判断 ====
 def is_trading_day(d: date) -> bool:
@@ -507,18 +504,15 @@ DASHBOARD_PATH = Path(r'd:\cc-data\portfolio-dashboard.html')
 
 # 仪表盘显示用元数据（名称、分类、颜色）
 DASHBOARD_META = {
-    510300: {"displayName": "华泰柏瑞沪深300ETF", "targetWeight": 15, "cat": "沪深300", "catColor": "#60a5fa"},
-    510500: {"displayName": "南方中证500ETF",     "targetWeight": 10, "cat": "中证500", "catColor": "#818cf8"},
-    588050: {"displayName": "科创50ETF",          "targetWeight": 5,  "cat": "科创50",  "catColor": "#c084fc"},
-    159915: {"displayName": "易方达创业板ETF",    "targetWeight": 5,  "cat": "创业板",  "catColor": "#e879f9"},
-    512890: {"displayName": "华泰柏瑞红利低波ETF","targetWeight": 5,  "cat": "红利低波","catColor": "#f472b6"},
-    511380: {"displayName": "可转债ETF",          "targetWeight": 10, "cat": "可转债",  "catColor": "#fb923c"},
-    511260: {"displayName": "国泰上证10年期国债ETF","targetWeight":10, "cat": "10年国债","catColor": "#34d399"},
-    511010: {"displayName": "国泰上证5年期国债ETF","targetWeight": 10, "cat": "5年国债", "catColor": "#2dd4bf"},
-    511360: {"displayName": "海富通中证短融ETF",  "targetWeight": 5,  "cat": "短融",    "catColor": "#22d3ee"},
-    518880: {"displayName": "华安黄金ETF",        "targetWeight": 15, "cat": "黄金",    "catColor": "#fbbf24"},
-    511880: {"displayName": "银华日利ETF",        "targetWeight": 5,  "cat": "银华日利","catColor": "#a3a3a3"},
-    511990: {"displayName": "华宝添益ETF",        "targetWeight": 5,  "cat": "华宝添益","catColor": "#d4d4d4"},
+    510300: {"displayName": "华泰柏瑞沪深300ETF", "targetWeight": 18.75, "cat": "沪深300", "catColor": "#60a5fa"},
+    588050: {"displayName": "科创50ETF",          "targetWeight": 6.25,  "cat": "科创50",  "catColor": "#c084fc"},
+    159915: {"displayName": "易方达创业板ETF",    "targetWeight": 6.25,  "cat": "创业板",  "catColor": "#e879f9"},
+    512890: {"displayName": "华泰柏瑞红利低波ETF","targetWeight": 6.25,  "cat": "红利低波","catColor": "#f472b6"},
+    511380: {"displayName": "可转债ETF",          "targetWeight": 12.5,  "cat": "可转债",  "catColor": "#fb923c"},
+    511260: {"displayName": "国泰上证10年期国债ETF","targetWeight":12.5, "cat": "10年国债","catColor": "#34d399"},
+    511010: {"displayName": "国泰上证5年期国债ETF","targetWeight": 12.5, "cat": "5年国债", "catColor": "#2dd4bf"},
+    511360: {"displayName": "海富通中证短融ETF",  "targetWeight": 6.25,  "cat": "短融",    "catColor": "#22d3ee"},
+    518880: {"displayName": "华安黄金ETF",        "targetWeight": 18.75, "cat": "黄金",    "catColor": "#fbbf24"},
 }
 
 
@@ -715,7 +709,7 @@ def sync_dashboard():
 # ==== 主流程 ====
 def main():
     print(f"\n{'='*60}")
-    print(f"  500万资产配置组合 - 每日更新")
+    print(f"  400万资产配置组合 - 每日更新")
     print(f"  执行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"{'='*60}")
 

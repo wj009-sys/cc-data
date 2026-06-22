@@ -14,7 +14,6 @@ FILE_PATH = Path(r'd:\cc-data\500万资产配置组合2026.xlsx')
 
 HOLDINGS = [
     {"code": 510300, "name": "沪深300ETF",        "ts": "510300.SH", "high_vol": False, "type": "equity"},
-    {"code": 510500, "name": "中证500ETF",        "ts": "510500.SH", "high_vol": False, "type": "equity"},
     {"code": 588050, "name": "科创50ETF",         "ts": "588050.SH", "high_vol": True,  "type": "equity"},
     {"code": 159915, "name": "创业板ETF",         "ts": "159915.SZ", "high_vol": True,  "type": "equity"},
     {"code": 512890, "name": "红利低波ETF",       "ts": "512890.SH", "high_vol": False, "type": "equity"},
@@ -23,11 +22,9 @@ HOLDINGS = [
     {"code": 511010, "name": "5年国债ETF",        "ts": "511010.SH", "high_vol": False, "type": "bond"},
     {"code": 511360, "name": "短融ETF",           "ts": "511360.SH", "high_vol": False, "type": "bond"},
     {"code": 518880, "name": "黄金ETF",           "ts": "518880.SH", "high_vol": False, "type": "commodity"},
-    {"code": 511880, "name": "银华日利ETF",       "ts": "511880.SH", "high_vol": False, "type": "cash"},
-    {"code": 511990, "name": "华宝添益ETF",       "ts": "511990.SH", "high_vol": False, "type": "cash"},
 ]
 HOLDING_MAP = {h["code"]: h for h in HOLDINGS}
-CODE_ROWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+CODE_ROWS = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 pro = ts.pro_api()
 

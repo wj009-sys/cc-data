@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>500万资产配置组合 — 投资仪表盘</title>
+<title>400万资产配置组合 — 投资仪表盘</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
 </script>
 <style>
@@ -245,7 +245,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="logo-area">
       <div class="logo-icon">📊</div>
       <div>
-        <div class="page-title">500万资产配置组合 <span style="font-size:10px;color:var(--text-muted);font-weight:400">v2026.06.09-r4</span></div>
+        <div class="page-title">400万资产配置组合 <span style="font-size:10px;color:var(--text-muted);font-weight:400">v2026.06.22-r5</span></div>
         <div class="page-subtitle">投资仪表盘 · 实时行情驱动</div>
       </div>
     </div>
@@ -335,23 +335,20 @@ tbody tr:last-child td { border-bottom: none; }
 // ============================================================
 //  CONFIGURATION
 // ============================================================
-var TOTAL_CAPITAL = 5000000;
+var TOTAL_CAPITAL = 4000000;
 var STORAGE_KEY_DAILY = 'pf_daily_pnl_v4';
 var STORAGE_KEY_LAST  = 'pf_last_snapshot_v4';
 
 var basePositions = [
-  { code:'510300', name:'华泰柏瑞沪深300ETF', targetWeight:15, costPrice:4.885, qty:153800, cost:751313.0, cat:'沪深300', catColor:'#60a5fa' },
-  { code:'510500', name:'南方中证500ETF', targetWeight:10, costPrice:8.696, qty:20000, cost:173920.0, cat:'中证500', catColor:'#818cf8' },
-  { code:'588050', name:'科创50ETF', targetWeight:5, costPrice:1.838, qty:60000, cost:110280.0, cat:'科创50', catColor:'#c084fc' },
-  { code:'159915', name:'易方达创业板ETF', targetWeight:5, costPrice:3.968, qty:63000, cost:249984.0, cat:'创业板', catColor:'#e879f9' },
-  { code:'512890', name:'华泰柏瑞红利低波ETF', targetWeight:5, costPrice:1.15, qty:218000, cost:250700.0, cat:'红利低波', catColor:'#f472b6' },
-  { code:'511380', name:'可转债ETF', targetWeight:10, costPrice:13.8644, qty:14500, cost:201033.8, cat:'可转债', catColor:'#fb923c' },
-  { code:'511260', name:'国泰上证10年期国债ETF', targetWeight:10, costPrice:135.645, qty:3700, cost:501886.5, cat:'10年国债', catColor:'#34d399' },
-  { code:'511010', name:'国泰上证5年期国债ETF', targetWeight:10, costPrice:141.2121, qty:3500, cost:494242.35, cat:'5年国债', catColor:'#2dd4bf' },
-  { code:'511360', name:'海富通中证短融ETF', targetWeight:5, costPrice:113.462, qty:2200, cost:249616.4, cat:'短融', catColor:'#22d3ee' },
-  { code:'518880', name:'华安黄金ETF', targetWeight:15, costPrice:9.2327, qty:55800, cost:515184.66, cat:'黄金', catColor:'#fbbf24' },
-  { code:'511880', name:'银华日利ETF', targetWeight:5, costPrice:null, qty:0, cost:0, cat:'银华日利', catColor:'#a3a3a3' },
-  { code:'511990', name:'华宝添益ETF', targetWeight:5, costPrice:null, qty:0, cost:0, cat:'华宝添益', catColor:'#d4d4d4' }
+  { code:'510300', name:'华泰柏瑞沪深300ETF', targetWeight:18.75, costPrice:4.885, qty:153800, cost:751313.0, cat:'沪深300', catColor:'#60a5fa' },
+  { code:'588050', name:'科创50ETF', targetWeight:6.25, costPrice:1.838, qty:60000, cost:110280.0, cat:'科创50', catColor:'#c084fc' },
+  { code:'159915', name:'易方达创业板ETF', targetWeight:6.25, costPrice:3.968, qty:63000, cost:249984.0, cat:'创业板', catColor:'#e879f9' },
+  { code:'512890', name:'华泰柏瑞红利低波ETF', targetWeight:6.25, costPrice:1.15, qty:218000, cost:250700.0, cat:'红利低波', catColor:'#f472b6' },
+  { code:'511380', name:'可转债ETF', targetWeight:12.5, costPrice:13.8644, qty:14500, cost:201033.8, cat:'可转债', catColor:'#fb923c' },
+  { code:'511260', name:'国泰上证10年期国债ETF', targetWeight:12.5, costPrice:135.645, qty:3700, cost:501886.5, cat:'10年国债', catColor:'#34d399' },
+  { code:'511010', name:'国泰上证5年期国债ETF', targetWeight:12.5, costPrice:141.2121, qty:3500, cost:494242.35, cat:'5年国债', catColor:'#2dd4bf' },
+  { code:'511360', name:'海富通中证短融ETF', targetWeight:6.25, costPrice:113.462, qty:2200, cost:249616.4, cat:'短融', catColor:'#22d3ee' },
+  { code:'518880', name:'华安黄金ETF', targetWeight:18.75, costPrice:9.2327, qty:55800, cost:515184.66, cat:'黄金', catColor:'#fbbf24' }
 ];
 
 var transactions = [
@@ -372,23 +369,24 @@ var transactions = [
   { date:'2026-05-28', code:'518880', name:'华安黄金ETF', price:9.15, qty:8000, amount:73200.0 },
   { date:'2026-05-28', code:'511990', name:'华宝添益ETF', price:99.997, qty:2500, amount:249992.5 },
   { date:'2026-06-05', code:'511380', name:'可转债ETF', price:13.95, qty:7200, amount:100440.0 },
-  { date:'2026-06-05', code:'511990', name:'华宝添益ETF', price:100.005, qty:-2500, amount:250012.5 },
+  { date:'2026-06-05', code:'511990', name:'华宝添益ETF', price:100.005, qty:-2500, amount:-250012.5 },
   { date:'2026-06-05', code:'510300', name:'沪深300ETF', price:4.85, qty:20000, amount:97000.0 },
   { date:'2026-06-08', code:'518880', name:'华安黄金ETF', price:9.0, qty:8000, amount:72000.0 },
   { date:'2026-06-08', code:'510300', name:'沪深300ETF', price:4.78, qty:23800, amount:113764.0 },
   { date:'2026-06-10', code:'511380', name:'可转债ETF', price:13.78, qty:7300, amount:100594.0 },
-  { date:'2026-06-12', code:'518880', name:'华安黄金ETF', price:8.65, qty:8000, amount:69200.0 }
+  { date:'2026-06-12', code:'518880', name:'华安黄金ETF', price:8.65, qty:8000, amount:69200.0 },
+  { date:'2026-06-22', code:'510500', name:'中证500ETF', price:8.777, qty:-20000, amount:175540.0 }
 ];
 
 var disciplineRules = [
   { icon:'🎯', iconClass:'gold',  title:'一、统一阶梯止盈',
-    body: '<div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">第一档 +7%</span>：成本价×1.07，减仓<span class="highlight">20%</span>，每档仅触发一次</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">第二档 +9%</span>：成本价×1.09，减仓<span class="highlight">30%</span>，累计已减50%</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">第三档 +12%</span>：成本价×1.12，清仓<span class="highlight">100%</span>，本轮交易结束</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">适用：510300/510500/588050/159915/512890/511380/518880<br>止盈资金2个交易日内再配置</div>' },
+    body: '<div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">第一档 +7%</span>：成本价×1.07，减仓<span class="highlight">20%</span>，每档仅触发一次</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">第二档 +9%</span>：成本价×1.09，减仓<span class="highlight">30%</span>，累计已减50%</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">第三档 +12%</span>：成本价×1.12，清仓<span class="highlight">100%</span>，本轮交易结束</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">适用：510300/588050/159915/512890/511380/518880<br>止盈资金2个交易日内再配置</div>' },
   { icon:'🛑', iconClass:'red',   title:'二、高波动品种硬止损',
     body: '<div class="rule-row"><span class="rule-dot amber-dot"></span><span><span class="highlight">预警线 ≥-5%</span>：记录台账，暂停新增买入，保持仓位观察</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span><span class="highlight">止损A ≥-10%</span>：次日开盘市价卖出50%，剩余~12.5万</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span><span class="highlight">止损B ≥-15%</span>：次日开盘市价卖出100%，彻底清仓观察20日</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">动态止损：价格跌破20日均线且累计跌幅超8%→预警<br>适用：科创50/创业板专用</div>' },
   { icon:'📉', iconClass:'blue',  title:'三、权益品种统一止损',
-    body: '<div class="rule-row"><span class="rule-dot red-dot"></span><span>统一止损线：<span class="highlight">-15%</span></span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span>适用：510300/510500/512890/518880/511380</span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span>清仓后观察<span class="highlight">40个交易日</span>，站稳20日均线方可重建</span></div>' },
+    body: '<div class="rule-row"><span class="rule-dot red-dot"></span><span>统一止损线：<span class="highlight">-15%</span></span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span>适用：510300/512890/518880/511380</span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span>清仓后观察<span class="highlight">40个交易日</span>，站稳20日均线方可重建</span></div>' },
   { icon:'⚖️', iconClass:'green', title:'四、组合再平衡',
-    body: '<div class="rule-row"><span class="rule-dot green-dot"></span><span><span class="highlight">预警线 ±3%</span>：记录台账，观察准备资金，不强制操作</span></div><div class="rule-row"><span class="rule-dot amber-dot"></span><span><span class="highlight">触发线 ±7%</span>：强制卖出超配、买入低配，2个交易日内完成</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span><span class="highlight">紧急线 ±10%</span>：次日必须完成纠偏，次日收盘前</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">估值再平衡：沪深300 PE>70%分位→权益降5%→转国债<br>卖出排序：黄金>科创/创业>可转债>中证500>沪深300>红利低波</div>' },
+    body: '<div class="rule-row"><span class="rule-dot green-dot"></span><span><span class="highlight">预警线 ±3%</span>：记录台账，观察准备资金，不强制操作</span></div><div class="rule-row"><span class="rule-dot amber-dot"></span><span><span class="highlight">触发线 ±7%</span>：强制卖出超配、买入低配，2个交易日内完成</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span><span class="highlight">紧急线 ±10%</span>：次日必须完成纠偏，次日收盘前</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">估值再平衡：沪深300 PE>70%分位→权益降5%→转国债<br>卖出排序：黄金>科创/创业>可转债>沪深300>红利低波</div>' },
   { icon:'🌋', iconClass:'red',   title:'五、熔断与黑天鹅应对',
     body: '<div class="rule-row"><span class="rule-dot green-dot"></span><span><span class="highlight">绿色 ＜-5%</span>：正常波动，维持既有纪律</span></div><div class="rule-row"><span class="rule-dot amber-dot"></span><span><span class="highlight">黄色 ≥-10%</span>：组合预警，暂停新建仓+追涨</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span><span class="highlight">红色 ≥-12%</span>：组合熔断，权益压至60%以下</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span><span class="highlight">黑天鹅 ≥-15%</span>：权益压至40%以下，保留20%现金+40%债券</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">不可抗拒条款：触发当日必须下达卖出指令</div>' },
   { icon:'🥇', iconClass:'gold',  title:'六、黄金ETF建仓计划',
@@ -396,7 +394,7 @@ var disciplineRules = [
   { icon:'💰', iconClass:'green', title:'七、盈利提取规则',
     body: '<div class="rule-row"><span class="rule-dot green-dot"></span><span>年收益<span class="highlight">>15%</span>时，提取<span class="highlight">50%</span>至独立现金账户</span></div><div class="rule-row"><span class="rule-dot green-dot"></span><span>作为胜利果实锁定，不计入再平衡范围</span></div>' },
   { icon:'💧', iconClass:'blue',  title:'八、流动性三原则',
-    body: '<div class="rule-row"><span class="rule-dot blue-dot"></span><span><span class="highlight">511880+511990 (50万)</span>：除非系统暴跌补仓，否则不动</span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span><span class="highlight">511360 (25万)</span>：T+0战术灵活配置</span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span>类现金合计<span class="highlight">≥75万</span></span></div>' }
+    body: '<div class="rule-row"><span class="rule-dot blue-dot"></span><span><span class="highlight">511360 (25万)</span>：T+0战术灵活配置，作为组合唯一现金管理工具</span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span>类现金合计<span class="highlight">≥25万</span></span></div>' }
 ];
 
 var SEED_DAILY = [
@@ -659,21 +657,20 @@ function renderPositionsTable(positions) {
 }
 
 function renderStatsRow(positions, totalMv) {
-  var equityTotal = positions.filter(function(p) { return ['沪深300','中证500','科创50','创业板','红利低波'].indexOf(p.cat) !== -1; }).reduce(function(s,p) { return s + p.marketValue; }, 0);
+  var equityTotal = positions.filter(function(p) { return ['沪深300','科创50','创业板','红利低波'].indexOf(p.cat) !== -1; }).reduce(function(s,p) { return s + p.marketValue; }, 0);
   var fixedTotal  = positions.filter(function(p) { return ['10年国债','5年国债','短融','可转债'].indexOf(p.cat) !== -1; }).reduce(function(s,p) { return s + p.marketValue; }, 0);
-  var otherTotal  = positions.filter(function(p) { return ['黄金','银华日利','华宝添益'].indexOf(p.cat) !== -1; }).reduce(function(s,p) { return s + p.marketValue; }, 0);
+  var otherTotal  = positions.filter(function(p) { return ['黄金'].indexOf(p.cat) !== -1; }).reduce(function(s,p) { return s + p.marketValue; }, 0);
   var deployed = totalMv;
   var pending = TOTAL_CAPITAL - deployed;
   var deployedPct = (deployed / TOTAL_CAPITAL * 100).toFixed(1);
   var goldMv = (positions.find(function(p) { return p.code === '518880'; }) || {}).marketValue || 0;
-  var cargoMv = (positions.find(function(p) { return p.code === '511990'; }) || {}).marketValue || 0;
 
   var el = document.getElementById('statsRow');
   el.innerHTML =
     '<div class="stat-card total"><div class="stat-label">组合总市值 / 总规模</div><div class="stat-value gold">' + fmt(deployed,0) + '</div><div class="stat-change">总规模 ¥' + fmt(TOTAL_CAPITAL,0) + ' | 已部署 ' + deployedPct + '%</div></div>' +
-    '<div class="stat-card equity"><div class="stat-label">权益类资产 (股票ETF)</div><div class="stat-value blue">' + fmt(equityTotal,0) + '</div><div class="stat-change">沪深300 + 中证500 + 科创50 + 创业板 + 红利低波</div></div>' +
+    '<div class="stat-card equity"><div class="stat-label">权益类资产 (股票ETF)</div><div class="stat-value blue">' + fmt(equityTotal,0) + '</div><div class="stat-change">沪深300 + 科创50 + 创业板 + 红利低波</div></div>' +
     '<div class="stat-card fixed"><div class="stat-label">固收类资产 (债券ETF)</div><div class="stat-value green">' + fmt(fixedTotal,0) + '</div><div class="stat-change">10年国债 + 5年国债 + 短融 | 可转债待建</div></div>' +
-    '<div class="stat-card cash"><div class="stat-label">黄金 + 货基 + 待部署</div><div class="stat-value amber">' + fmt(otherTotal + pending,0) + '</div><div class="stat-change">黄金' + fmt(goldMv,0) + ' + 货基' + fmt(cargoMv,0) + ' + 待部署~' + fmt(pending,0) + '</div></div>';
+    '<div class="stat-card cash"><div class="stat-label">黄金 + 待部署</div><div class="stat-value amber">' + fmt(otherTotal + pending,0) + '</div><div class="stat-change">黄金' + fmt(goldMv,0) + ' + 待部署~' + fmt(pending,0) + '</div></div>';
 }
 
 function renderPieChart(positions) {
