@@ -8,6 +8,9 @@ import tushare as ts
 import pandas as pd
 import os
 
+# 绕过系统代理（Tushare API 直连）
+os.environ['NO_PROXY'] = 'api.waditu.com,*.waditu.com,localhost,127.0.0.1'
+
 # 读取环境变量中的token, 或者读取本地记录的token
 token = os.getenv('TUSHARE_TOKEN') or ts.get_token()
 

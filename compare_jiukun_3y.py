@@ -1,5 +1,7 @@
 """3-year backtest: baseline portfolio vs replacing 中证500+货基 with 九坤500指增."""
 import os
+# 绕过系统代理（Tushare API 直连）
+os.environ['NO_PROXY'] = 'api.waditu.com,*.waditu.com,localhost,127.0.0.1'
 import pandas as pd
 import numpy as np
 import tushare as ts

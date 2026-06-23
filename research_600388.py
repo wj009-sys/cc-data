@@ -7,6 +7,9 @@ import sys
 import pandas as pd
 import numpy as np
 
+# 绕过系统代理（Tushare API 直连）
+os.environ['NO_PROXY'] = 'api.waditu.com,*.waditu.com,localhost,127.0.0.1'
+
 # Check tushare
 try:
     import tushare as ts

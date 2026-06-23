@@ -5,12 +5,15 @@ if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
+# 绕过系统代理（Tushare API 直连）
+os.environ['NO_PROXY'] = 'api.waditu.com,*.waditu.com,localhost,127.0.0.1'
+
 import tushare as ts
 from openpyxl import load_workbook
 from datetime import date, timedelta
 from pathlib import Path
 
-FILE_PATH = Path(r'd:\cc-data\400万资产配置组合2026.xlsx')
+FILE_PATH = Path(r'C:\Users\65004\Desktop\小白\cc-data\400万资产配置组合2026.xlsx')
 
 HOLDINGS = [
     {"code": 510300, "name": "沪深300ETF",        "ts": "510300.SH", "high_vol": False, "type": "equity"},

@@ -23,9 +23,12 @@ if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
+# 绕过系统代理（Tushare API 直连）
+os.environ['NO_PROXY'] = 'api.waditu.com,*.waditu.com,localhost,127.0.0.1'
+
 # ==== 配置 ====
-FILE_PATH = Path(r'd:\cc-data\400万资产配置组合2026.xlsx')
-CACHE_PATH = Path(r'd:\cc-data\.portfolio_cache.pkl')
+FILE_PATH = Path(r'C:\Users\65004\Desktop\小白\cc-data\400万资产配置组合2026.xlsx')
+CACHE_PATH = Path(r'C:\Users\65004\Desktop\小白\cc-data\.portfolio_cache.pkl')
 
 # 中国节假日（2026年，需年末更新下一年）
 CN_HOLIDAYS_2026 = {
@@ -517,7 +520,7 @@ def update_spreadsheet(prices: dict, trade_date_str: str):
 # ==== 仪表盘 HTML 同步 ====
 import re
 
-DASHBOARD_PATH = Path(r'd:\cc-data\portfolio-dashboard.html')
+DASHBOARD_PATH = Path(r'C:\Users\65004\Desktop\小白\cc-data\portfolio-dashboard.html')
 
 # 仪表盘显示用元数据（名称、分类、颜色）
 DASHBOARD_META = {
@@ -623,22 +626,35 @@ def sync_dashboard():
     new_txns_block = "var transactions = [\n" + ",\n".join(txn_lines) + "\n];"
 
     # --- 3. 读取日报表，汇总每日浮动盈亏 ---
+    # 注意：历史数据列映射不一致，只有 9 行/天 且为新日期（8位数字格式）才可靠
     ws_daily = wb["日报"]
-    daily_totals = {}  # date_str -> total_floating_pnl
+    raw_rows = {}  # date_str -> list of row tuples
     for row in ws_daily.iter_rows(min_row=2, values_only=True):
         date_val = row[0]
-        pnl = row[9]  # J: 浮动盈亏
         if not date_val:
             continue
+        # 保留原始字符串用于判断格式
         if isinstance(date_val, (date, datetime)):
             date_str = date_val.strftime("%Y-%m-%d")
+            raw_fmt = "date"  # 日期对象，旧格式
         else:
             raw = str(date_val).strip()
             if len(raw) == 8 and raw.isdigit():
                 date_str = f"{raw[:4]}-{raw[4:6]}-{raw[6:8]}"
+                raw_fmt = "8digit"  # 当前脚本格式
             else:
                 date_str = raw[:10] if len(raw) >= 10 else raw
-        daily_totals[date_str] = daily_totals.get(date_str, 0) + (float(pnl) if pnl else 0)
+                raw_fmt = "string"
+        if date_str not in raw_rows:
+            raw_rows[date_str] = {"rows": [], "fmt": raw_fmt}
+        raw_rows[date_str]["rows"].append(row)
+
+    # 只使用 9行/天 + 8位数字日期格式（当前脚本写入的可靠数据）
+    daily_totals = {}
+    for date_str, info in raw_rows.items():
+        if len(info["rows"]) == 9 and info["fmt"] == "8digit":
+            total_pnl = sum(float(r[9]) if r[9] else 0 for r in info["rows"])
+            daily_totals[date_str] = round(total_pnl, 2)
 
     wb.close()
 
@@ -658,7 +674,7 @@ def sync_dashboard():
         count=1,
     )
 
-    # --- 5. SEED_DAILY 增量更新：解析已有条目 + 追加新日期 → 完整重建 ---
+    # --- 5. SEED_DAILY 增量更新：HTML 已有数据保留 + Excel 新日期追加 ---
     existing_entries = []  # [(date, pnl, cumulative), ...]
     seed_match = re.search(r'var SEED_DAILY = \[([\s\S]*?)\n\];', html)
     if seed_match:
@@ -666,41 +682,31 @@ def sync_dashboard():
         for m in entry_pattern.finditer(seed_match.group(1)):
             existing_entries.append((m.group(1), float(m.group(2)), float(m.group(3))))
 
-    # 构建已有日期集合
     existing_dates = {e[0] for e in existing_entries}
-
-    # 找出新日期（Excel 有但 SEED_DAILY 没有的交易日）
     new_dates = sorted(d for d in daily_totals if d not in existing_dates)
 
     if new_dates:
         print(f"  [INFO] SEED_DAILY 追加 {len(new_dates)} 新日期: {new_dates}")
-        # 合并新日期（先用 Excel 累计值，pnl 暂置 0）
-        all_entries = existing_entries + [(d, 0, round(daily_totals[d], 2)) for d in new_dates]
-        # 按日期排序
-        all_entries.sort(key=lambda x: x[0])
-        # 过滤非交易日
-        filtered = []
-        for d_str, p, c in all_entries:
-            entry_date = date(int(d_str[:4]), int(d_str[5:7]), int(d_str[8:10]))
-            if is_trading_day(entry_date):
-                filtered.append((d_str, p, c))
-        # 重新计算 pnl（基于排序后的累计值增量）
+        # 合并新旧，按日期排序后重新计算累计
+        all_raw = existing_entries + [(d, daily_totals[d], 0) for d in new_dates]
+        all_raw.sort(key=lambda x: x[0])
+        # 过滤非交易日，重新计算 cumulative
         all_entries = []
-        prev_cum = 0
-        for d_str, p, c in filtered:
-            new_pnl = round(c - prev_cum, 2)
-            all_entries.append((d_str, new_pnl, round(c, 2)))
-            prev_cum = c
+        cumulative = 0
+        for d_str, day_pnl, _ in all_raw:
+            entry_date = date(int(d_str[:4]), int(d_str[5:7]), int(d_str[8:10]))
+            if not is_trading_day(entry_date):
+                continue
+            cumulative = round(cumulative + day_pnl, 2)
+            all_entries.append((d_str, day_pnl, cumulative))
     else:
-        # 无新日期，过滤非交易日
+        # 无新日期，保留现有（只过滤非交易日）
         all_entries = []
         for d_str, p, c in existing_entries:
             entry_date = date(int(d_str[:4]), int(d_str[5:7]), int(d_str[8:10]))
             if is_trading_day(entry_date):
                 all_entries.append((d_str, p, c))
-        if len(all_entries) < len(existing_entries):
-            removed = [e[0] for e in existing_entries if e[0] not in {a[0] for a in all_entries}]
-            print(f"  [INFO] SEED_DAILY 移除非交易日条目: {removed}")
+        print(f"  [INFO] SEED_DAILY 无新日期需要追加")
 
     seed_lines = []
     for date_str, pnl, cum in all_entries:
@@ -714,13 +720,8 @@ def sync_dashboard():
         count=1,
     )
 
-    if new_dates:
-        print(f"  [INFO] SEED_DAILY 追加 {len(new_dates)} 新日期: {new_dates}")
-    else:
-        print(f"  [INFO] SEED_DAILY 无新日期需要追加")
-
     DASHBOARD_PATH.write_text(html, encoding="utf-8")
-    print(f"  [OK] 仪表盘已同步 ({len(pos_lines)} 持仓, {len(txn_lines)} 笔交易, +{len(new_dates)} 新快照)")
+    print(f"  [OK] 仪表盘已同步 ({len(pos_lines)} 持仓, {len(txn_lines)} 笔交易, {len(all_entries)} 个日报快照)")
 
 
 # ==== 主流程 ====

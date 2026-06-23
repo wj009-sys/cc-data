@@ -8,8 +8,11 @@
 - ETF 未上市期间：对应目标资金保留为现金
 - 始终使用原始目标权重计算偏离
 """
-import sys, io
+import sys, io, os
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+# 绕过系统代理（Tushare API 直连）
+os.environ['NO_PROXY'] = 'api.waditu.com,*.waditu.com,localhost,127.0.0.1'
 
 import tushare as ts
 import pandas as pd
