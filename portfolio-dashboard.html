@@ -348,7 +348,7 @@ var basePositions = [
   { code:'511260', name:'国泰上证10年期国债ETF', targetWeight:12.5, costPrice:135.645, qty:3700, cost:501886.5, cat:'10年国债', catColor:'#34d399' },
   { code:'511010', name:'国泰上证5年期国债ETF', targetWeight:12.5, costPrice:141.2121, qty:3500, cost:494242.35, cat:'5年国债', catColor:'#2dd4bf' },
   { code:'511360', name:'海富通中证短融ETF', targetWeight:6.25, costPrice:113.462, qty:2200, cost:249616.4, cat:'短融', catColor:'#22d3ee' },
-  { code:'518880', name:'华安黄金ETF', targetWeight:18.75, costPrice:9.2327, qty:55800, cost:515184.66, cat:'黄金', catColor:'#fbbf24' }
+  { code:'518880', name:'华安黄金ETF', targetWeight:18.75, costPrice:9.1196, qty:63800, cost:581830.48, cat:'黄金', catColor:'#fbbf24' }
 ];
 
 var transactions = [
@@ -375,25 +375,24 @@ var transactions = [
   { date:'2026-06-08', code:'510300', name:'沪深300ETF', price:4.78, qty:23800, amount:113764.0 },
   { date:'2026-06-10', code:'511380', name:'可转债ETF', price:13.78, qty:7300, amount:100594.0 },
   { date:'2026-06-12', code:'518880', name:'华安黄金ETF', price:8.65, qty:8000, amount:69200.0 },
-  { date:'2026-06-22', code:'510500', name:'中证500ETF', price:8.777, qty:-20000, amount:175540.0 }
+  { date:'2026-06-22', code:'510500', name:'中证500ETF', price:8.777, qty:-20000, amount:175540.0 },
+  { date:'2026-06-25', code:'518880', name:'华安黄金ETF', price:8.33, qty:8000, amount:66640.0 }
 ];
 
 var disciplineRules = [
-  { icon:'🎯', iconClass:'gold',  title:'一、统一阶梯止盈',
-    body: '<div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">第一档 +7%</span>：成本价×1.07，减仓<span class="highlight">20%</span>，每档仅触发一次</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">第二档 +9%</span>：成本价×1.09，减仓<span class="highlight">30%</span>，累计已减50%</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">第三档 +12%</span>：成本价×1.12，清仓<span class="highlight">100%</span>，本轮交易结束</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">适用：510300/588050/159915/512890/511380/518880<br>止盈资金2个交易日内再配置</div>' },
-  { icon:'🛑', iconClass:'red',   title:'二、高波动品种硬止损',
-    body: '<div class="rule-row"><span class="rule-dot amber-dot"></span><span><span class="highlight">预警线 ≥-5%</span>：记录台账，暂停新增买入，保持仓位观察</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span><span class="highlight">止损A ≥-10%</span>：次日开盘市价卖出50%，剩余~12.5万</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span><span class="highlight">止损B ≥-15%</span>：次日开盘市价卖出100%，彻底清仓观察20日</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">动态止损：价格跌破20日均线且累计跌幅超8%→预警<br>适用：科创50/创业板专用</div>' },
-  { icon:'📉', iconClass:'blue',  title:'三、权益品种统一止损',
-    body: '<div class="rule-row"><span class="rule-dot red-dot"></span><span>统一止损线：<span class="highlight">-15%</span></span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span>适用：510300/512890/518880/511380</span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span>清仓后观察<span class="highlight">40个交易日</span>，站稳20日均线方可重建</span></div>' },
-  { icon:'⚖️', iconClass:'green', title:'四、组合再平衡（半年度）',
-    body: '<div class="rule-row"><span class="rule-dot green-dot"></span><span><span class="highlight">半年度检查</span>：每年<span class="highlight">6月末、12月末</span>最后一个交易日执行</span></div><div class="rule-row"><span class="rule-dot amber-dot"></span><span><span class="highlight">触发阀值 ±20%</span>：任一品种实际权重偏离目标权重超过<span class="highlight">±20%（相对偏离）</span>，全仓调回目标权重</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">例如：目标10%的品种，实际<8%或>12%时触发<br>卖出排序：黄金>科创/创业>可转债>沪深300>红利低波</div>' },
-  { icon:'🌋', iconClass:'red',   title:'五、熔断与黑天鹅应对',
+  { icon:'🎯', iconClass:'gold',  title:'一、单档止盈（+20%卖半）',
+    body: '<div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">触发条件</span>：浮盈达到 <span class="highlight">+20%</span>（成本价×1.20）</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">执行动作</span>：卖出持仓的 <span class="highlight">50%</span>，仅触发一次（重建后重置）</span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span><span class="highlight">资金处理</span>：卖出资金买入511360短融ETF，不临时再配置</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">适用：510300/588050/159915/512890/511380（不含黄金/债底）<br>等待年度再平衡统一调配</div>' },
+  { icon:'🛑', iconClass:'red',   title:'二、统一止损（-15%清仓，观察20日）',
+    body: '<div class="rule-row"><span class="rule-dot red-dot"></span><span>统一止损线：浮亏 <span class="highlight">-15%</span>（较成本价）</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span>执行动作：当日/次日开盘市价卖出<span class="highlight">全部持仓</span></span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span>重建规则：清仓后观察<span class="highlight">20个交易日</span>方可重建（约1个月）</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">适用：510300/588050/159915/512890/511380（不含黄金/债底）<br>取消原高波动专用规则，统一执行</div>' },
+  { icon:'⚖️', iconClass:'green', title:'三、组合再平衡（年度 ±20% 阀值）',
+    body: '<div class="rule-row"><span class="rule-dot green-dot"></span><span><span class="highlight">年度检查</span>：每年<span class="highlight">12月末</span>最后一个交易日执行</span></div><div class="rule-row"><span class="rule-dot amber-dot"></span><span><span class="highlight">触发阀值 ±20%</span>：任一品种相对偏离超过±20%，全仓调回目标权重</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">偏离计算：(实际权重-目标权重)/目标权重<br>例：目标10%的品种，实际<8%或>12%时触发<br>卖出排序：黄金>科创/创业>可转债>沪深300>红利低波</div>' },
+  { icon:'🌋', iconClass:'red',   title:'四、熔断与黑天鹅应对',
     body: '<div class="rule-row"><span class="rule-dot green-dot"></span><span><span class="highlight">绿色 ＜-5%</span>：正常波动，维持既有纪律</span></div><div class="rule-row"><span class="rule-dot amber-dot"></span><span><span class="highlight">黄色 ≥-10%</span>：组合预警，暂停新建仓+追涨</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span><span class="highlight">红色 ≥-12%</span>：组合熔断，权益压至60%以下</span></div><div class="rule-row"><span class="rule-dot red-dot"></span><span><span class="highlight">黑天鹅 ≥-15%</span>：权益压至40%以下，保留20%现金+40%债券</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">不可抗拒条款：触发当日必须下达卖出指令</div>' },
-  { icon:'🥇', iconClass:'gold',  title:'六、黄金ETF建仓计划',
-    body: '<div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">底仓先行</span>：立即执行，25万 → 仓位33%</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">定投阶段</span>：每月固定4.5万（第2-12月）→ 累计25-70万</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">大跌加码</span>：单月跌幅超5%加5万/次，累计不超过75万</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">收官</span>：12个月完成或累计达75万，补齐剩余 → 100%</span></div>' },
-  { icon:'💰', iconClass:'green', title:'七、盈利提取规则',
+  { icon:'🥇', iconClass:'gold',  title:'五、黄金ETF长期配置（不触发止盈止损）',
+    body: '<div class="rule-row"><span class="rule-dot gold-dot"></span><span>黄金ETF（518880）为<span class="highlight">长期配置</span>，<span class="highlight">不适用</span>止盈/止损规则</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">底仓先行</span>：立即执行，25万 → 仓位33%</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">定投阶段</span>：每月固定4.5万（第2-12月）→ 累计25-70万</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">大跌加码</span>：单月跌幅超5%加5万/次，累计不超过75万</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">收官</span>：12个月完成或累计达75万，补齐剩余 → 100%</span></div>' },
+  { icon:'💰', iconClass:'green', title:'六、盈利提取规则',
     body: '<div class="rule-row"><span class="rule-dot green-dot"></span><span>年收益<span class="highlight">>15%</span>时，提取<span class="highlight">50%</span>至独立现金账户</span></div><div class="rule-row"><span class="rule-dot green-dot"></span><span>作为胜利果实锁定，不计入再平衡范围</span></div>' },
-  { icon:'💧', iconClass:'blue',  title:'八、流动性三原则',
+  { icon:'💧', iconClass:'blue',  title:'七、流动性三原则',
     body: '<div class="rule-row"><span class="rule-dot blue-dot"></span><span><span class="highlight">511360 (25万)</span>：T+0战术灵活配置，作为组合唯一现金管理工具</span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span>类现金合计<span class="highlight">≥25万</span></span></div>' }
 ];
 
@@ -423,7 +422,9 @@ var SEED_DAILY = [
   { date:'2026-06-18', pnl:6064.9, cumulative:23448.09 },
   { date:'2026-06-22', pnl:35514.59, cumulative:58962.68 },
   { date:'2026-06-23', pnl:-11764.71, cumulative:47197.97 },
-  { date:'2026-06-24', pnl:-11764.71, cumulative:35433.26 }
+  { date:'2026-06-24', pnl:-11764.71, cumulative:35433.26 },
+  { date:'2026-06-25', pnl:-2982.23, cumulative:32451.03 },
+  { date:'2026-06-26', pnl:-2982.23, cumulative:29468.8 }
 ];
 
 // ============================================================
