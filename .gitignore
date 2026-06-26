@@ -11,3 +11,11 @@ desktop.ini
 *.tmp
 ~$*
 update_log.txt
+backtest_out.txt
+
+# Python cache (auto-generated)
+__pycache__/
+*.pyc
+
+# Portfolio cache (auto-generated binary)
+.portfolio_cache.pkl
