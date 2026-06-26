@@ -1,3 +1,22 @@
 {
-  "tasks": []
+  "tasks": [
+    {
+      "id": "claw_1782499632660_midday",
+      "name": "午间投资简报",
+      "cron": "45 11 * * 1-5",
+      "prompt": "cd \"C:/Users/65004/Desktop/小白/cc-data\" && \"C:/Users/65004/AppData/Local/Programs/Python/Python314/python.exe\" generate_briefing.py midday",
+      "recurring": true,
+      "createdAt": "2026-06-27T02:42:00.000Z",
+      "source": "claw-mcp"
+    },
+    {
+      "id": "claw_1782499633456_afternoon",
+      "name": "收盘投资简报",
+      "cron": "33 16 * * 1-5",
+      "prompt": "cd \"C:/Users/65004/Desktop/小白/cc-data\" && \"C:/Users/65004/AppData/Local/Programs/Python/Python314/python.exe\" generate_briefing.py afternoon",
+      "recurring": true,
+      "createdAt": "2026-06-27T02:42:00.000Z",
+      "source": "claw-mcp"
+    }
+  ]
 }

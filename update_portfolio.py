@@ -121,9 +121,9 @@ def fetch_prices(ts_codes: list, trade_date: str) -> dict:
 # ==== 信号检测 ====
 def detect_signals(holdings_data: list, trade_date_str: str = None) -> dict:
     """
-    根据投资纪要规则检测触发信号。
+    根据投资纪要规则检测触发信号（V3优化版）。
     holdings_data: [{code, name, close, cost_price, quantity, weight, target_weight, pct_chg, type, high_vol}, ...]
-    trade_date_str: YYYYMMDD 格式的交易日期（用于判断半年度末）
+    trade_date_str: YYYYMMDD 格式的交易日期（用于判断半年度末/年度末）
     返回: {code: [signal_strings]}
     """
     signals = {}
@@ -161,33 +161,20 @@ def detect_signals(holdings_data: list, trade_date_str: str = None) -> dict:
         if qty and qty > 0 and cost and cost > 0:
             pnl_pct = (close - cost) / cost
 
-            # 一、统一阶梯止盈（7%/9%/12%）
-            if pnl_pct >= 0.12:
-                s.append(f"🔴止盈第三档：浮盈{pnl_pct:.1%} >= 12%，清仓止盈")
-            elif pnl_pct >= 0.09:
-                s.append(f"🟡止盈第二档：浮盈{pnl_pct:.1%} >= 9%，减仓30%")
-            elif pnl_pct >= 0.07:
-                s.append(f"🟢止盈第一档：浮盈{pnl_pct:.1%} >= 7%，减仓20%")
+            # 一、V3统一止盈（+20%卖半，仅权益类，不含黄金/债）
+            if htype == "equity" and pnl_pct >= 0.20:
+                s.append(f"🟢V3止盈：浮盈{pnl_pct:.1%} >= +20%，卖半仓，资金转入511360短融ETF")
 
-            # 二、高波动品种硬止损（科创50/创业板）
-            if is_high_vol:
+            # 二、V3统一止损（-15%观察20日，所有权益类统一，取消高波动专有止损）
+            if htype == "equity":
                 if pnl_pct <= -0.15:
-                    s.append(f"🔴止损B：浮亏{pnl_pct:.1%} <= -15%，次日清仓")
-                elif pnl_pct <= -0.10:
-                    s.append(f"🟠止损A：浮亏{pnl_pct:.1%} <= -10%，次日卖出50%")
-                elif pnl_pct <= -0.05:
-                    s.append(f"⚡预警：浮亏{pnl_pct:.1%} >= -5%，暂停新增买入")
+                    s.append(f"🔴V3止损：浮亏{pnl_pct:.1%} <= -15%，次日清仓观察20日")
 
-            # 三、其他权益品种统一止损（-15%）
-            if htype == "equity" and not is_high_vol:
-                if pnl_pct <= -0.15:
-                    s.append(f"🔴统一止损：浮亏{pnl_pct:.1%} <= -15%，清仓观察40日")
-
-        # 四、组合再平衡：仅半年度末检查 ±20% 相对阀值
-        if is_semi_annual_check and target > 0 and weight > 0:
+        # 三、V3再平衡：仅年度末（12月最后一个交易日）检查 ±20% 相对阀值
+        if is_semi_annual_check and dt.month == 12 and target > 0 and weight > 0:
             rel_dev = (weight - target) / target
             if abs(rel_dev) > 0.20:
-                s.append(f"🔄半年度再平衡：相对偏离{rel_dev:+.1%}，触发±20%阀值，调回目标权重")
+                s.append(f"🔄V3年度再平衡：相对偏离{rel_dev:+.1%}，触发±20%阀值，调回目标权重")
 
         signals[code] = s
 
@@ -195,14 +182,16 @@ def detect_signals(holdings_data: list, trade_date_str: str = None) -> dict:
 
 
 def detect_portfolio_signals(total_pnl_pct: float, equity_weight: float) -> list:
-    """五、熔断与黑天鹅应对"""
+    """四、V3熔断与黑天鹅应对"""
     s = []
     if total_pnl_pct <= -0.15:
-        s.append("⚫黑天鹅：组合回撤>=15%，权益压至40%以下")
+        s.append("⚫黑天鹅：组合回撤>=15%，权益压至40%以下，保留20%现金+40%债券")
     elif total_pnl_pct <= -0.12:
-        s.append("🔴组合熔断：回撤>=12%，权益压至60%以下")
+        s.append("🔴组合熔断：回撤>=12%，权益压至60%以下，资金转债券/现金")
     elif total_pnl_pct <= -0.10:
-        s.append("🟡组合预警：回撤>=10%，暂停新建仓+追涨")
+        s.append("🟠组合预警：回撤>=10%，暂停新建仓+追涨，允许止盈/止损/再平衡")
+    elif total_pnl_pct <= -0.05:
+        s.append("🟡组合关注：回撤>=5%，维持现持仓观望")
     return s
 
 

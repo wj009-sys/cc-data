@@ -3,5 +3,8 @@
     "allow": [
       "Bash(curl -sL *)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "claw"
+  ]
 }
