@@ -26,7 +26,7 @@ if sys.platform == 'win32':
 
 # ==== 配置 ====
 FILE_PATH = Path(r'C:\Users\65004\Desktop\小白\cc-data\400万资产配置组合2026.xlsx')
-WECOM_WEBHOOK = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=9cccf118-070c-422f-ada6-1a8db2e0f309'
+WECOM_WEBHOOK = os.environ.get('WECOM_WEBHOOK') or 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=9cccf118-070c-422f-ada6-1a8db2e0f309'
 
 # 9 个 ETF 持仓
 HOLDINGS = [

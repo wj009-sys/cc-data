@@ -123,13 +123,14 @@ def detect_signals(holdings_data: list, trade_date_str: str = None) -> dict:
     """
     根据投资纪要规则检测触发信号（V3优化版）。
     holdings_data: [{code, name, close, cost_price, quantity, weight, target_weight, pct_chg, type, high_vol}, ...]
-    trade_date_str: YYYYMMDD 格式的交易日期（用于判断半年度末/年度末）
+    trade_date_str: YYYYMMDD 格式的交易日期（用于判断6月/12月末最后一个交易日）
     返回: {code: [signal_strings]}
     """
     signals = {}
 
     # 判断是否为半年度末检查日 (6月/12月最后一个交易日)
-    is_semi_annual_check = False
+    # 注意：is_end_of_period 用于再平衡（仅12月触发）和潜在的半年度评估
+    is_end_of_period = False
     if trade_date_str:
         dt = datetime.strptime(trade_date_str, "%Y%m%d")
         if dt.month in (6, 12):
@@ -144,7 +145,7 @@ def detect_signals(holdings_data: list, trade_date_str: str = None) -> dict:
                     has_more_trading_days = True
                     break
             if not has_more_trading_days:
-                is_semi_annual_check = True
+                is_end_of_period = True
 
     for h in holdings_data:
         s = []
@@ -171,7 +172,8 @@ def detect_signals(holdings_data: list, trade_date_str: str = None) -> dict:
                     s.append(f"🔴V3止损：浮亏{pnl_pct:.1%} <= -15%，次日清仓观察20日")
 
         # 三、V3再平衡：仅年度末（12月最后一个交易日）检查 ±20% 相对阀值
-        if is_semi_annual_check and dt.month == 12 and target > 0 and weight > 0:
+        # is_end_of_period 也覆盖6月但此处仅12月触发再平衡
+        if is_end_of_period and dt.month == 12 and target > 0 and weight > 0:
             rel_dev = (weight - target) / target
             if abs(rel_dev) > 0.20:
                 s.append(f"🔄V3年度再平衡：相对偏离{rel_dev:+.1%}，触发±20%阀值，调回目标权重")
@@ -196,24 +198,37 @@ def detect_portfolio_signals(total_pnl_pct: float, equity_weight: float) -> list
 
 
 # ==== 日报缺失交易日回补 ====
+def normalize_date_str(val) -> str:
+    """
+    将日报 sheet 中各种日期格式统一转为 YYYYMMDD 字符串。
+    支持: date/datetime 对象、8位数字 "20260626"、带横线 "2026-06-26" 等
+    """
+    if isinstance(val, (date, datetime)):
+        return val.strftime("%Y%m%d")
+    s = str(val).strip()
+    # 8位数字
+    if len(s) == 8 and s.isdigit():
+        return s
+    # 2026-06-26 或 2026-06-26 00:00:00
+    digits = [c for c in s if c.isdigit()]
+    if len(digits) >= 8:
+        return "".join(digits[:8])
+    return s  # fallback
+
+
 def backfill_missing_trading_days(wb, ws_summary, ws_daily, latest_trade_date_str):
     """
     检查日报中缺失的交易日，自动回补。
     防止因脚本漏跑导致走势图断档。
     """
-    # 收集日报已有日期
+    # 收集日报已有日期（统一用 YYYYMMDD 格式）
     existing_dates = set()
     for row in range(2, ws_daily.max_row + 1):
         dval = ws_daily.cell(row=row, column=1).value
         if dval:
-            if isinstance(dval, (date, datetime)):
-                existing_dates.add(dval.strftime("%Y%m%d"))
-            else:
-                raw = str(dval).strip()
-                if len(raw) == 8 and raw.isdigit():
-                    existing_dates.add(raw)
-                elif len(raw) >= 10:
-                    existing_dates.add(raw[:10].replace("-", ""))
+            dnorm = normalize_date_str(dval)
+            if len(dnorm) == 8 and dnorm.isdigit():
+                existing_dates.add(dnorm)
 
     if not existing_dates:
         return
@@ -234,10 +249,26 @@ def backfill_missing_trading_days(wb, ws_summary, ws_daily, latest_trade_date_st
     if not missing_dates:
         return
 
-    print(f"  [INFO] 检测到 {len(missing_dates)} 个缺失交易日: {missing_dates}")
+    # 安全限制：仅回补最近 10 个交易日内的缺失数据
+    # 超过此范围的回补使用当前持仓数据（而非历史数据），会造成 P&L 失真
+    ten_trading_days_ago = latest_dt
+    count = 0
+    while count < 10 and ten_trading_days_ago > earliest_dt:
+        ten_trading_days_ago -= timedelta(days=1)
+        if is_trading_day(ten_trading_days_ago):
+            count += 1
+    recent_missing = [d for d in missing_dates if d >= ten_trading_days_ago.strftime("%Y%m%d")]
+    skipped = [d for d in missing_dates if d < ten_trading_days_ago.strftime("%Y%m%d")]
+    if skipped:
+        print(f"  [WARN] 跳过 {len(skipped)} 个超过10个交易日的缺失日期（历史数据回补会导致持仓数据失真）: {skipped}")
+    if not recent_missing:
+        print(f"  [INFO] 无可回补的近期缺失日期")
+        return
+
+    print(f"  [INFO] 检测到 {len(recent_missing)} 个缺失交易日（含 {len(skipped)} 个已跳过）: {recent_missing}")
 
     ts_codes = [h["ts"] for h in HOLDINGS]
-    for d_str in missing_dates:
+    for d_str in recent_missing:
         print(f"    回补 {d_str}...")
         prices = fetch_prices(ts_codes, d_str)
         if not prices:
@@ -294,8 +325,8 @@ def backfill_missing_trading_days(wb, ws_summary, ws_daily, latest_trade_date_st
         # 删除旧数据（如有）并追加
         existing_rows = []
         for r in range(2, ws_daily.max_row + 1):
-            dval = str(ws_daily.cell(row=r, column=1).value or "")
-            if dval.replace("-", "") == d_str:
+            dval_norm = normalize_date_str(ws_daily.cell(row=r, column=1).value)
+            if dval_norm == d_str:
                 existing_rows.append(r)
         for r in reversed(existing_rows):
             ws_daily.delete_rows(r)
@@ -451,8 +482,8 @@ def update_spreadsheet(prices: dict, trade_date_str: str):
     today_short = trade_date_str  # YYYYMMDD
     existing_rows_to_delete = []
     for r in range(2, ws_daily.max_row + 1):
-        dval = str(ws_daily.cell(row=r, column=1).value or "")
-        if dval.replace("-", "") == today_short:
+        dval_norm = normalize_date_str(ws_daily.cell(row=r, column=1).value)
+        if dval_norm == today_short:
             existing_rows_to_delete.append(r)
 
     if existing_rows_to_delete:
@@ -638,12 +669,22 @@ def sync_dashboard():
             raw_rows[date_str] = {"rows": [], "fmt": raw_fmt}
         raw_rows[date_str]["rows"].append(row)
 
-    # 只使用 9行/天 + 8位数字日期格式（当前脚本写入的可靠数据）
+    # 只使用 9行/天 + 8位数字日期格式 + P&L在合理范围内的数据
+    # BUGFIX(v2026.06.27): 过滤早期列映射不一致的数据（P&L异常大=市场价值）
+    # BUGFIX(v2026.06.27): 额外检查是否至少有品种持仓>0（排除qty=0的垃圾行）
     daily_totals = {}
     for date_str, info in raw_rows.items():
         if len(info["rows"]) == 9 and info["fmt"] == "8digit":
             total_pnl = sum(float(r[9]) if r[9] else 0 for r in info["rows"])
-            daily_totals[date_str] = round(total_pnl, 2)
+            # 合理的总P&L范围：±500k（4M组合的±12.5%）
+            if abs(total_pnl) <= 500000:
+                # 进一步检查：至少有一个品种持仓数量>0且收盘价有效（排除垃圾数据）
+                has_real_data = any(
+                    (r[3] or 0) > 0 and (r[6] or 0) > 0  # D列qty>0 且 G列close>0
+                    for r in info["rows"]
+                )
+                if has_real_data:
+                    daily_totals[date_str] = round(total_pnl, 2)
 
     wb.close()
 
@@ -663,7 +704,7 @@ def sync_dashboard():
         count=1,
     )
 
-    # --- 5. SEED_DAILY 增量更新：HTML 已有数据保留 + Excel 新日期追加 ---
+    # --- 5. 解析现有 SEED_DAILY（用于后续修正对比和桥接） ---
     existing_entries = []  # [(date, pnl, cumulative), ...]
     seed_match = re.search(r'var SEED_DAILY = \[([\s\S]*?)\n\];', html)
     if seed_match:
@@ -671,31 +712,52 @@ def sync_dashboard():
         for m in entry_pattern.finditer(seed_match.group(1)):
             existing_entries.append((m.group(1), float(m.group(2)), float(m.group(3))))
 
-    existing_dates = {e[0] for e in existing_entries}
-    new_dates = sorted(d for d in daily_totals if d not in existing_dates)
+    # --- 6. SEED_DAILY 更新：将日报总P&L转为每日变化量 ---
+    # BUGFIX(v2026.06.27): 日报列J是累计浮动盈亏，需取相邻日差值得每日变化
+    # 旧逻辑直接使用总P&L作为每日变化，导致SEED_DAILY数据和累计盈亏完全错误
+    sorted_clean_dates = sorted(daily_totals.keys())
+    daily_changes = {}
+    existing_map_cum = {e[0]: e[2] for e in existing_entries}  # 取现有累计值作为桥接
+    prev_total = None
+    for d in sorted_clean_dates:
+        curr_total = daily_totals[d]
+        if prev_total is None:
+            # 第一个干净日期：用之前最后一个条目的累计值作为起点（桥接跨缺失区间）
+            prev_total = 0.0
+            prev_dates = sorted([ed for ed in existing_map_cum.keys() if ed < d])
+            if prev_dates:
+                prev_total = existing_map_cum[prev_dates[-1]]
+        daily_changes[d] = round(curr_total - prev_total, 2)
+        prev_total = curr_total
 
-    if new_dates:
-        print(f"  [INFO] SEED_DAILY 追加 {len(new_dates)} 新日期: {new_dates}")
-        # 合并新旧，按日期排序后重新计算累计
-        all_raw = existing_entries + [(d, daily_totals[d], 0) for d in new_dates]
-        all_raw.sort(key=lambda x: x[0])
-        # 过滤非交易日，重新计算 cumulative
-        all_entries = []
-        cumulative = 0
-        for d_str, day_pnl, _ in all_raw:
-            entry_date = date(int(d_str[:4]), int(d_str[5:7]), int(d_str[8:10]))
-            if not is_trading_day(entry_date):
-                continue
-            cumulative = round(cumulative + day_pnl, 2)
-            all_entries.append((d_str, day_pnl, cumulative))
+    # 合并：仅追加新日期，不覆盖已有 SEED_DAILY 条目
+    # BUGFIX(v2026.06.27): 日报6/1~6/18数据损坏不可靠，已有条目是已验证的种子数据
+    existing_date_set = {e[0] for e in existing_entries}
+    all_raw = []
+    for d in sorted_clean_dates:
+        if d not in existing_date_set:
+            all_raw.append((d, daily_changes[d], 0))
+    for d, pnl, cum in existing_entries:
+        all_raw.append((d, pnl, 0))
+
+    all_raw.sort(key=lambda x: x[0])
+
+    # 过滤非交易日，重新计算 cumulative
+    all_entries = []
+    cumulative = 0.0
+    for d_str, day_pnl, _ in all_raw:
+        entry_date = date(int(d_str[:4]), int(d_str[5:7]), int(d_str[8:10]))
+        if not is_trading_day(entry_date):
+            continue
+        cumulative = round(cumulative + day_pnl, 2)
+        all_entries.append((d_str, day_pnl, cumulative))
+
+    # 日志
+    added_dates = [d for d in sorted_clean_dates if d not in existing_date_set]
+    if added_dates:
+        print(f"  [INFO] SEED_DAILY 追加 {len(added_dates)} 个新日期: {added_dates}")
     else:
-        # 无新日期，保留现有（只过滤非交易日）
-        all_entries = []
-        for d_str, p, c in existing_entries:
-            entry_date = date(int(d_str[:4]), int(d_str[5:7]), int(d_str[8:10]))
-            if is_trading_day(entry_date):
-                all_entries.append((d_str, p, c))
-        print(f"  [INFO] SEED_DAILY 无新日期需要追加")
+        print(f"  [INFO] SEED_DAILY 无更新")
 
     seed_lines = []
     for date_str, pnl, cum in all_entries:
