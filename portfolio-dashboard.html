@@ -424,7 +424,10 @@ var SEED_DAILY = [
   { date:'2026-06-23', pnl:-47279.3, cumulative:-11764.71 },
   { date:'2026-06-24', pnl:7232.2, cumulative:-4532.51 },
   { date:'2026-06-25', pnl:1550.28, cumulative:-2982.23 },
-  { date:'2026-06-26', pnl:-30938.8, cumulative:-33921.03 }
+  { date:'2026-06-26', pnl:-30938.8, cumulative:-33921.03 },
+  { date:'2026-06-29', pnl:22208.8, cumulative:-11712.23 },
+  { date:'2026-06-30', pnl:0.0, cumulative:-11712.23 },
+  { date:'2026-07-01', pnl:15429.1, cumulative:3716.87 }
 ];
 
 // ============================================================
@@ -474,15 +477,47 @@ function fetchPrices(codes) {
 //  LOCAL STORAGE
 // ============================================================
 function loadDailyHistory() {
+  // 优先使用 localStorage 缓存，但合并 SEED_DAILY 中的新日期
+  // 这样 Python 端 sync_dashboard() 新增的日期能自动出现在图表中
+  var cached = null;
   try {
     var raw = localStorage.getItem(STORAGE_KEY_DAILY);
     if (raw) {
       var arr = JSON.parse(raw);
-      if (Array.isArray(arr) && arr.length) return arr;
+      if (Array.isArray(arr) && arr.length) cached = arr;
     }
   } catch(e) {}
-  localStorage.setItem(STORAGE_KEY_DAILY, JSON.stringify(SEED_DAILY));
-  return SEED_DAILY.slice();
+
+  if (!cached) {
+    localStorage.setItem(STORAGE_KEY_DAILY, JSON.stringify(SEED_DAILY));
+    return SEED_DAILY.slice();
+  }
+
+  // 合并：以 localStorage 为基础，追加 SEED_DAILY 中不存在的新日期
+  var cachedDates = {};
+  cached.forEach(function(d) { cachedDates[d.date] = true; });
+
+  var hasNew = false;
+  for (var i = 0; i < SEED_DAILY.length; i++) {
+    if (!cachedDates[SEED_DAILY[i].date]) {
+      cached.push(SEED_DAILY[i]);
+      hasNew = true;
+    }
+  }
+
+  if (hasNew) {
+    // 按日期排序
+    cached.sort(function(a, b) { return a.date.localeCompare(b.date); });
+    // 重新计算累计盈亏
+    var cum = 0;
+    for (var j = 0; j < cached.length; j++) {
+      cum = Math.round((cum + cached[j].pnl) * 100) / 100;
+      cached[j].cumulative = cum;
+    }
+    localStorage.setItem(STORAGE_KEY_DAILY, JSON.stringify(cached));
+  }
+
+  return cached;
 }
 
 function saveDailyHistory(data) {
