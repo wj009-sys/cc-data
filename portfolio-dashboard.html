@@ -91,7 +91,15 @@ body::after {
 .refresh-btn.spinning .btn-icon { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+.income-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.income-row .stat-card { background: linear-gradient(135deg, rgba(17,24,39,0.9), rgba(22,31,51,0.95)); }
+.income-row .stat-card.unrealized::after { background: var(--blue); }
+.income-row .stat-card.realized::after { background: var(--green); }
+.income-row .stat-card.dividend::after { background: var(--gold); }
+.income-row .stat-card.total-return::after { background: var(--amber); }
+.income-row .stat-value.positive { color: var(--green); }
+.income-row .stat-value.negative { color: var(--red); }
 .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; position: relative; overflow: hidden; transition: var(--transition); }
 .stat-card:hover { border-color: var(--border-light); transform: translateY(-1px); box-shadow: var(--shadow-card); }
 .stat-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; border-radius: 4px 0 0 4px; }
@@ -208,12 +216,12 @@ tbody tr:last-child td { border-bottom: none; }
 .animate-in { animation: fadeInUp 0.5s ease forwards; opacity: 0; }
 
 @media (max-width: 1024px) {
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .stats-row, .income-row { grid-template-columns: repeat(2, 1fr); }
   .charts-row { grid-template-columns: 1fr; }
   .discipline-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 }
 @media (max-width: 640px) {
-  .stats-row { grid-template-columns: 1fr; }
+  .stats-row, .income-row { grid-template-columns: 1fr; }
   .stat-value { font-size: 22px; }
   .header-top { flex-direction: column; align-items: flex-start; }
   .container { padding: 0 12px; }
@@ -265,6 +273,9 @@ tbody tr:last-child td { border-bottom: none; }
 
 <!-- Stats Row -->
 <div class="stats-row" id="statsRow"></div>
+
+<!-- Income Composition Row -->
+<div class="income-row" id="incomeRow"></div>
 
 <!-- Charts Row -->
 <div class="charts-row">
@@ -380,6 +391,21 @@ var transactions = [
   { date:'2026-07-02', code:'588050', name:'科创50ETF', price:2.121, qty:-30000, amount:-63630.0 }
 ];
 
+// 已实现利润：卖出交易产生的实际盈亏（FIFO匹配买入成本）
+// sync_dashboard 从流水 sheet 自动计算并写入
+var realizedProfits = [
+  { date:'2026-06-05', code:'511990', name:'华宝添益ETF', sellPrice:100.005, costPrice:99.997, qty:2500, profit:20.0 },
+  { date:'2026-06-22', code:'510500', name:'中证500ETF', sellPrice:8.777, costPrice:8.696, qty:20000, profit:1620.0 },
+  { date:'2026-07-02', code:'588050', name:'科创50ETF', sellPrice:2.121, costPrice:1.838, qty:30000, profit:8490.0 }
+];
+
+// 分红记录：ETF现金分红（手动录入）
+// sync_dashboard 保留已有条目，不覆盖
+var dividends = [
+  { date:'2026-06-29', code:'511010', name:'5年国债ETF', amount:2850.40, note:'现金分红' },
+  { date:'2026-06-29', code:'511260', name:'10年国债ETF', amount:4693.82, note:'现金分红' }
+];
+
 var disciplineRules = [
   { icon:'🎯', iconClass:'gold',  title:'一、单档止盈（+20%卖半）',
     body: '<div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">触发条件</span>：浮盈达到 <span class="highlight">+20%</span>（成本价×1.20）</span></div><div class="rule-row"><span class="rule-dot gold-dot"></span><span><span class="highlight">执行动作</span>：卖出持仓的 <span class="highlight">50%</span>，仅触发一次（重建后重置）</span></div><div class="rule-row"><span class="rule-dot blue-dot"></span><span><span class="highlight">资金处理</span>：卖出资金买入511360短融ETF，不临时再配置</span></div><div class="rule-row" style="margin-top:4px;font-size:11px;color:var(--text-muted)">适用：510300/588050/159915/512890/511380（不含黄金/债底）<br>等待年度再平衡统一调配</div>' },
@@ -398,7 +424,7 @@ var disciplineRules = [
 ];
 
 var SEED_DAILY = [
-  { date:'2026-05-19', pnl:283.6, cumulative:283.6 },
+  { date:'2026-05-19', pnl:0.0, cumulative:283.6 },
   { date:'2026-05-20', pnl:-1792.95, cumulative:-1509.35 },
   { date:'2026-05-21', pnl:-26051.75, cumulative:-27561.1 },
   { date:'2026-05-22', pnl:-9026.55, cumulative:-36587.65 },
@@ -421,15 +447,15 @@ var SEED_DAILY = [
   { date:'2026-06-16', pnl:60023.6, cumulative:-1304.51 },
   { date:'2026-06-17', pnl:18687.7, cumulative:17383.19 },
   { date:'2026-06-18', pnl:6064.9, cumulative:23448.09 },
-  { date:'2026-06-22', pnl:14706.5, cumulative:38154.59 },
-  { date:'2026-06-23', pnl:-47279.3, cumulative:-9124.71 },
-  { date:'2026-06-24', pnl:7232.2, cumulative:-1892.51 },
-  { date:'2026-06-25', pnl:1550.28, cumulative:-342.23 },
-  { date:'2026-06-26', pnl:-30938.8, cumulative:-31281.03 },
-  { date:'2026-06-29', pnl:22208.8, cumulative:-9072.23 },
-  { date:'2026-06-30', pnl:15429.1, cumulative:6356.87 },
-  { date:'2026-07-01', pnl:-17111.0, cumulative:-10754.13 },
-  { date:'2026-07-02', pnl:-39960.5, cumulative:-50714.63 }
+  { date:'2026-06-22', pnl:12066.5, cumulative:35514.59 },
+  { date:'2026-06-23', pnl:-47279.3, cumulative:-11764.71 },
+  { date:'2026-06-24', pnl:7232.2, cumulative:-4532.51 },
+  { date:'2026-06-25', pnl:1550.28, cumulative:-2982.23 },
+  { date:'2026-06-26', pnl:-30938.8, cumulative:-33921.03 },
+  { date:'2026-06-29', pnl:22208.8, cumulative:-11712.23 },
+  { date:'2026-06-30', pnl:15429.1, cumulative:3716.87 },
+  { date:'2026-07-01', pnl:-17111.0, cumulative:-13394.13 },
+  { date:'2026-07-02', pnl:-39960.5, cumulative:-53354.63 }
 ];
 
 // ============================================================
@@ -479,7 +505,7 @@ function fetchPrices(codes) {
 //  LOCAL STORAGE
 // ============================================================
 function loadDailyHistory() {
-  // v2026.07.02-r7: SEED_DAILY（Python sync_dashboard 写入）是收盘价权威数据源
+  // v2026.07.02-r8: SEED_DAILY cumulative 修复，与汇总浮盈对齐（桥接偏移-2640修正）
   // localStorage 仅用于补充 SEED_DAILY 中不存在的日期（如当日盘中快照）
   // 修复：实时价格 localStorage 覆盖 sync 权威数据导致累计盈亏偏离的 bug
   var cached = null;
@@ -720,6 +746,29 @@ function renderStatsRow(positions, totalMv) {
     '<div class="stat-card cash"><div class="stat-label">黄金 + 待部署</div><div class="stat-value amber">' + fmt(otherTotal + pending,0) + '</div><div class="stat-change">黄金' + fmt(goldMv,0) + ' + 待部署~' + fmt(pending,0) + '</div></div>';
 }
 
+function renderIncomeRow(positions) {
+  // 未实现浮盈
+  var unrealized = positions.reduce(function(s, p) {
+    return s + (p.marketValue || 0) - (p.cost || 0);
+  }, 0);
+  // 已实现利润
+  var realized = realizedProfits.reduce(function(s, r) { return s + (r.profit || 0); }, 0);
+  // 分红
+  var dividendTotal = dividends.reduce(function(s, d) { return s + (d.amount || 0); }, 0);
+  // 总收益
+  var totalReturn = unrealized + realized + dividendTotal;
+
+  var unrealizedClass = unrealized >= 0 ? 'positive' : 'negative';
+  var totalClass = totalReturn >= 0 ? 'positive' : 'negative';
+
+  var el = document.getElementById('incomeRow');
+  el.innerHTML =
+    '<div class="stat-card unrealized"><div class="stat-label">📊 浮动盈亏（未实现）</div><div class="stat-value ' + unrealizedClass + '">' + (unrealized >= 0 ? '+' : '') + fmt(unrealized, 0) + '</div><div class="stat-change">当前持仓账面盈亏</div></div>' +
+    '<div class="stat-card realized"><div class="stat-label">✅ 已实现利润（卖出）</div><div class="stat-value positive">+' + fmt(realized, 0) + '</div><div class="stat-change">' + realizedProfits.length + ' 笔卖出交易</div></div>' +
+    '<div class="stat-card dividend"><div class="stat-label">💵 分红收入</div><div class="stat-value positive">+' + fmt(dividendTotal, 0) + '</div><div class="stat-change">' + dividends.length + ' 笔分红记录</div></div>' +
+    '<div class="stat-card total-return"><div class="stat-label">🏆 总收益（浮盈 + 已实现 + 分红）</div><div class="stat-value ' + totalClass + '">' + (totalReturn >= 0 ? '+' : '') + fmt(totalReturn, 0) + '</div><div class="stat-change">已实现 ¥' + fmt(realized + dividendTotal, 0) + ' + 浮盈 ¥' + fmt(unrealized, 0) + '</div></div>';
+}
+
 function renderPieChart(positions) {
   if (pieChart) pieChart.destroy();
   var catMap = {};
@@ -930,6 +979,7 @@ function refreshData(showLoadingFlag) {
       fallbackPositions = addWeightInfo(fallbackPositions);
       var totalMv = fallbackPositions.length > 0 ? fallbackPositions[0].totalMv : 0;
       renderStatsRow(fallbackPositions, totalMv);
+      renderIncomeRow(fallbackPositions);
       renderPositionsTable(fallbackPositions);
       renderPieChart(fallbackPositions);
       renderBarChart(fallbackPositions);
@@ -955,6 +1005,7 @@ function refreshData(showLoadingFlag) {
 
     updateDateBadge(dataDate, isLive);
     renderStatsRow(positions, totalMv);
+    renderIncomeRow(positions);
     renderPositionsTable(positions);
     renderPieChart(positions);
     renderBarChart(positions);
@@ -983,6 +1034,7 @@ function refreshData(showLoadingFlag) {
     fallbackPositions = addWeightInfo(fallbackPositions);
     var totalMv = fallbackPositions.length > 0 ? fallbackPositions[0].totalMv : 0;
     renderStatsRow(fallbackPositions, totalMv);
+    renderIncomeRow(fallbackPositions);
     renderPositionsTable(fallbackPositions);
     renderPieChart(fallbackPositions);
     renderBarChart(fallbackPositions);

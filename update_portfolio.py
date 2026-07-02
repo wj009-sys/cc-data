@@ -682,13 +682,31 @@ def sync_dashboard():
             total_pnl = sum(float(r[9]) if r[9] else 0 for r in info["rows"])
             # 合理的总P&L范围：±500k（4M组合的±12.5%）
             if abs(total_pnl) <= 500000:
-                # 进一步检查：至少有一个品种持仓数量>0且收盘价有效（排除垃圾数据）
+                # 进一步检查：至少有一个品种持仓数量>0且收盘价有效，或有浮动盈亏数据（排除垃圾行）
+                # v2026.07.02-r8: 部分日期（如6/30）修复后qty列为空但close/pnl有效，需放宽条件
                 has_real_data = any(
-                    (r[3] or 0) > 0 and (r[6] or 0) > 0  # D列qty>0 且 G列close>0
+                    ((r[3] or 0) > 0 and (r[6] or 0) > 0) or (r[9] is not None)
                     for r in info["rows"]
                 )
                 if has_real_data:
                     daily_totals[date_str] = round(total_pnl, 2)
+
+    # --- 3.5 读取流水原始数据（用于已实现利润计算，必须在 wb.close() 前） ---
+    txn_raw = []  # [(date, code, name, price, qty), ...]
+    for row in ws_trade.iter_rows(min_row=2, values_only=True):
+        if row[0] and row[1]:
+            d_val = row[0]
+            if isinstance(d_val, (date, datetime)):
+                d_str = d_val.strftime("%Y-%m-%d")
+            else:
+                d_str = str(d_val)[:10]
+            txn_raw.append((
+                d_str,
+                str(int(row[1])) if isinstance(row[1], float) else str(row[1]),
+                str(row[2]) if row[2] else '',
+                float(row[3]) if row[3] else 0,
+                int(row[4]) if row[4] else 0
+            ))
 
     wb.close()
 
@@ -718,20 +736,17 @@ def sync_dashboard():
 
     # --- 6. SEED_DAILY 更新：将日报总P&L转为每日变化量 ---
     # BUGFIX(v2026.06.27): 日报列J是累计浮动盈亏，需取相邻日差值得每日变化
-    # 旧逻辑直接使用总P&L作为每日变化，导致SEED_DAILY数据和累计盈亏完全错误
+    # v2026.07.02-r8: clean dates 的 cumulative 直接用日报 col J 总和，
+    # 不再从 SEED_DAILY 桥接（避免早期累计偏移传导到后续所有日期）
     sorted_clean_dates = sorted(daily_totals.keys())
     daily_changes = {}
-    existing_map_cum = {e[0]: e[2] for e in existing_entries}  # 取现有累计值作为桥接
     prev_total = None
     for d in sorted_clean_dates:
         curr_total = daily_totals[d]
-        if prev_total is None:
-            # 第一个干净日期：用之前最后一个条目的累计值作为起点（桥接跨缺失区间）
-            prev_total = 0.0
-            prev_dates = sorted([ed for ed in existing_map_cum.keys() if ed < d])
-            if prev_dates:
-                prev_total = existing_map_cum[prev_dates[-1]]
-        daily_changes[d] = round(curr_total - prev_total, 2)
+        if prev_total is not None:
+            daily_changes[d] = round(curr_total - prev_total, 2)
+        else:
+            daily_changes[d] = 0.0  # 首个日期占位，后续会被覆盖
         prev_total = curr_total
 
     # v2026.07.02-r7: 日报 6/19 之后数据已清洁，以日报为权威覆盖已有条目
@@ -739,30 +754,43 @@ def sync_dashboard():
     CORRUPTION_CUTOFF = '2026-06-19'
     existing_date_set = {e[0] for e in existing_entries}
 
-    # 日报中有、但 SEED_DAILY 没有的 → 新增
+    # 日报中有、但 SEED_DAILY 没有的 → 新增（直接使用日报累计值）
     all_raw = []
     for d in sorted_clean_dates:
         if d not in existing_date_set:
-            all_raw.append((d, daily_changes[d], 0))
+            all_raw.append((d, daily_changes[d], daily_totals[d]))
 
-    # 日报和 SEED_DAILY 都有的 → 6/19之后用日报覆盖，6/18之前保留 SEED_DAILY
+    # 日报和 SEED_DAILY 都有的 → 6/19之后用日报覆盖（pnl + cumulative），6/18之前保留 SEED_DAILY
     for d, pnl, cum in existing_entries:
         if d in sorted_clean_dates and d >= CORRUPTION_CUTOFF:
-            all_raw.append((d, daily_changes[d], 0))  # 日报覆盖
+            all_raw.append((d, daily_changes[d], daily_totals[d]))  # 日报覆盖 pnl + cumulative
         else:
-            all_raw.append((d, pnl, 0))  # 保留现有
+            all_raw.append((d, pnl, cum))  # 保留现有 pnl + cumulative
 
     all_raw.sort(key=lambda x: x[0])
 
-    # 过滤非交易日，重新计算 cumulative
+    # 过滤非交易日，构建最终列表
+    # v2026.07.02-r8: clean dates 直接用日报 cumulative；early dates 用原有 cumulative
+    # pnl 统一从相邻日期的 cumulative 差值计算，确保内部一致
     all_entries = []
-    cumulative = 0.0
-    for d_str, day_pnl, _ in all_raw:
+    for d_str, day_pnl, target_cum in all_raw:
         entry_date = date(int(d_str[:4]), int(d_str[5:7]), int(d_str[8:10]))
         if not is_trading_day(entry_date):
             continue
-        cumulative = round(cumulative + day_pnl, 2)
-        all_entries.append((d_str, day_pnl, cumulative))
+        all_entries.append([d_str, day_pnl, target_cum])  # 暂存 target_cum
+
+    # 重新计算 pnl = cumulative 差值（保证过渡日期一致）
+    for i in range(len(all_entries)):
+        d_str, _, target_cum = all_entries[i]
+        if i == 0:
+            all_entries[i][1] = 0.0  # 首个日期 pnl 置 0（无前一天可比较）
+        else:
+            prev_cum = all_entries[i-1][2]
+            all_entries[i][1] = round(target_cum - prev_cum, 2)
+        all_entries[i][2] = round(target_cum, 2)
+
+    # 转换回 tuple 列表
+    all_entries = [(e[0], e[1], e[2]) for e in all_entries]
 
     # 日志
     added_dates = [d for d in sorted_clean_dates if d not in existing_date_set]
@@ -783,8 +811,63 @@ def sync_dashboard():
         count=1,
     )
 
+    # --- 7. 计算已实现利润（FIFO 匹配买入成本） ---
+    txn_data = sorted(txn_raw, key=lambda x: x[0])
+
+    realized = []
+    buy_queues = {}  # code -> [[date, price, qty], ...]
+    for t_date, t_code, t_name, t_price, t_qty in txn_data:
+        if t_qty > 0:
+            if t_code not in buy_queues:
+                buy_queues[t_code] = []
+            buy_queues[t_code].append([t_date, t_price, t_qty])
+        elif t_qty < 0:
+            sell_qty = -t_qty
+            sell_price = t_price
+            if t_code in buy_queues and buy_queues[t_code]:
+                remaining = sell_qty
+                total_profit = 0.0
+                matched_cost_price = 0.0
+                while remaining > 0 and buy_queues[t_code]:
+                    lot = buy_queues[t_code][0]
+                    take = min(remaining, lot[2])
+                    profit_on_lot = (sell_price - lot[1]) * take
+                    total_profit += profit_on_lot
+                    matched_cost_price = lot[1]
+                    lot[2] -= take
+                    remaining -= take
+                    if lot[2] <= 0:
+                        buy_queues[t_code].pop(0)
+                realized.append({
+                    'date': t_date,
+                    'code': t_code,
+                    'name': t_name,
+                    'sellPrice': round(sell_price, 4),
+                    'costPrice': round(matched_cost_price, 4),
+                    'qty': sell_qty,
+                    'profit': round(total_profit, 2)
+                })
+
+    # 生成 realizedProfits 代码块
+    if realized:
+        rp_lines = []
+        for r in realized:
+            rp_lines.append(
+                f"  {{ date:'{r['date']}', code:'{r['code']}', name:'{r['name']}', "
+                f"sellPrice:{r['sellPrice']}, costPrice:{r['costPrice']}, qty:{r['qty']}, profit:{r['profit']} }}"
+            )
+        new_rp_block = "var realizedProfits = [\n" + ",\n".join(rp_lines) + "\n];"
+        html = re.sub(
+            r'var realizedProfits = \[[\s\S]*?\n\];',
+            new_rp_block,
+            html,
+            count=1,
+        )
+
+    # dividends 保留 HTML 中已有条目，不覆盖
+
     DASHBOARD_PATH.write_text(html, encoding="utf-8")
-    print(f"  [OK] 仪表盘已同步 ({len(pos_lines)} 持仓, {len(txn_lines)} 笔交易, {len(all_entries)} 个日报快照)")
+    print(f"  [OK] 仪表盘已同步 ({len(pos_lines)} 持仓, {len(txn_lines)} 笔交易, {len(all_entries)} 个日报快照, {len(realized)} 笔已实现利润)")
 
 
 # ==== 主流程 ====
