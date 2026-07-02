@@ -10,11 +10,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | 文件 | 说明 |
 |------|------|
-| `400万资产配置组合2026.xlsx` | 主数据文件，含 5 个 sheet（投资纪要、汇总、流水、日报、GA优化方案） |
+| `400万资产配置组合2026.xlsx` | 主数据文件，含 7 个 sheet（投资纪要、汇总、流水、日报、GA优化方案、已实现利润、分红） |
 | `update_portfolio.py` | 每日自动更新脚本，Tushare API 获取行情，更新汇总+日报，信号检测 + 仪表盘同步 |
 | `portfolio-dashboard.html` | 投资仪表盘，Chart.js 可视化（内嵌数据数组 + 东方财富实时行情API） |
 | `generate_briefing.py` | 投资简报生成 + 企业微信推送（午间/收盘两种模式） |
-| `400万资产配置方案（优化版）.docx` | 原始资产配置方案文档 |
+| `400万资产配置方案（优化版）.docx` | 原始资产配置方案文档（优化版） |
+| `400万资产配置方案（简化版）.docx` | 原始资产配置方案文档（简化版） |
+| `项目审计报告.md` | 项目全面审计报告（规则/数据/文件一致性） |
+| `backtest_v3_report.xlsx` | V3 回测结果 Excel 报表 |
 
 ### 其他文件
 
@@ -28,7 +31,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `gen_v3_excel.py` / `gen_backtest_excel.py` / `gen_best_excel.py` | 回测结果导出 Excel 报表 |
 | `backfill_dates.py` | 日报数据回补工具 |
 | `*.json` (5个) | 回测/优化结果存档 |
-| `*.xlsx` (2个) | 回测报表 + 主数据文件 |
+| `*.xlsx` (2个) | 回测报表（backtest_v3_report.xlsx）+ 主数据文件 |
+| `*.docx` (2个) | 资产配置方案文档（优化版/简化版） |
 | `archive/` | 历史备份文件（V3备份/日报清理前备份） |
 | `.claude/scheduled_tasks.json` | 定时任务配置（午间/收盘简报） |
 
@@ -39,6 +43,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **流水** — 交易记录：日期、代码、名称、单价、数量、金额（含临时品种 510500/511990）
 - **日报** — 每日行情快照，每个品种一行，末尾追加（⚠️ 2026-06-01~06-18 数据损坏，含重复行和列偏移）
 - **GA优化方案** — 遗传算法优化结果存档，4 方案对比表 + 详细参数
+- **已实现利润** — 卖出交易 FIFO 匹配计算的实际盈亏（3 笔，含汇总行）
+- **分红** — ETF 现金分红记录（2 笔，含汇总行）
 
 ## 常用命令
 
@@ -88,7 +94,7 @@ python -c "exec(open('update_portfolio.py').read().replace('if __name__==\"__mai
 
 `update_portfolio.py` 的 `sync_dashboard()` 函数定期将 Excel 数据同步到 HTML 文件：
 - `basePositions` — 汇总 sheet 的 9 个品种持仓数据
-- `transactions` — 流水 sheet 的 25 笔交易记录
+- `transactions` — 流水 sheet 的 26 笔交易记录
 - `SEED_DAILY` — 日报 sheet 的每日浮动盈亏（**已修复 v2026.06.27**：从总P&L正确计算每日变化量，而非直接用总P&L）
 
 ## 信号检测规则
