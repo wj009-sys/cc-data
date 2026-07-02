@@ -1,0 +1,438 @@
+{
+  "algorithm": "Genetic Algorithm (hand-rolled)",
+  "description": "Tournament selection + SBX crossover + polynomial mutation + elitism",
+  "config": {
+    "population_size": 60,
+    "generations": 50,
+    "total_evaluations": 3060,
+    "tournament_size": 3,
+    "crossover_prob": 0.9,
+    "mutation_prob": 0.3,
+    "elite_count": 2,
+    "bounds": {
+      "sp_trigger": [
+        0.05,
+        0.5
+      ],
+      "sp_sell_pct": [
+        0.3,
+        1.0
+      ],
+      "sl_trigger": [
+        0.1,
+        0.3
+      ],
+      "observe_days": [
+        10,
+        60
+      ],
+      "rb_threshold": [
+        0.1,
+        0.4
+      ]
+    },
+    "data_period": "2021-01-04 ~ 2025-12-31",
+    "trading_days": 1212,
+    "rb_freq": "annual"
+  },
+  "best_params": {
+    "sp_trigger": 0.3153,
+    "sp_sell_pct": 0.6855,
+    "sl_trigger": 0.15,
+    "observe_days": 51,
+    "rb_threshold": 0.3913
+  },
+  "best_metrics": {
+    "cagr": 12.2961,
+    "total_ret": 78.3349,
+    "max_dd": -11.4951,
+    "sharpe": 0.7067,
+    "trades": 56,
+    "fitness": 6.5485,
+    "final_val": 7133396.7
+  },
+  "convergence": [
+    {
+      "generation": 0,
+      "best_fitness": 4.3481,
+      "best_cagr": 11.8716,
+      "best_max_dd": -15.047,
+      "avg_fitness": -0.8509
+    },
+    {
+      "generation": 1,
+      "best_fitness": 4.3481,
+      "best_cagr": 11.8716,
+      "best_max_dd": -15.047,
+      "avg_fitness": 1.5135
+    },
+    {
+      "generation": 2,
+      "best_fitness": 4.6635,
+      "best_cagr": 8.7413,
+      "best_max_dd": -8.1556,
+      "avg_fitness": 2.1352
+    },
+    {
+      "generation": 3,
+      "best_fitness": 4.7743,
+      "best_cagr": 9.6067,
+      "best_max_dd": -9.6647,
+      "avg_fitness": 2.4232
+    },
+    {
+      "generation": 4,
+      "best_fitness": 5.3232,
+      "best_cagr": 11.4455,
+      "best_max_dd": -12.2447,
+      "avg_fitness": 3.4569
+    },
+    {
+      "generation": 5,
+      "best_fitness": 5.3232,
+      "best_cagr": 11.4455,
+      "best_max_dd": -12.2447,
+      "avg_fitness": 3.8474
+    },
+    {
+      "generation": 6,
+      "best_fitness": 5.4822,
+      "best_cagr": 9.4841,
+      "best_max_dd": -8.0037,
+      "avg_fitness": 3.9791
+    },
+    {
+      "generation": 7,
+      "best_fitness": 5.6567,
+      "best_cagr": 10.1615,
+      "best_max_dd": -9.0095,
+      "avg_fitness": 4.0145
+    },
+    {
+      "generation": 8,
+      "best_fitness": 5.7086,
+      "best_cagr": 10.2119,
+      "best_max_dd": -9.0067,
+      "avg_fitness": 4.5105
+    },
+    {
+      "generation": 9,
+      "best_fitness": 6.092,
+      "best_cagr": 11.7699,
+      "best_max_dd": -11.3559,
+      "avg_fitness": 4.5885
+    },
+    {
+      "generation": 10,
+      "best_fitness": 6.1617,
+      "best_cagr": 11.9254,
+      "best_max_dd": -11.5275,
+      "avg_fitness": 4.8675
+    },
+    {
+      "generation": 11,
+      "best_fitness": 6.1617,
+      "best_cagr": 11.9254,
+      "best_max_dd": -11.5275,
+      "avg_fitness": 4.9609
+    },
+    {
+      "generation": 12,
+      "best_fitness": 6.1942,
+      "best_cagr": 11.9592,
+      "best_max_dd": -11.53,
+      "avg_fitness": 4.9658
+    },
+    {
+      "generation": 13,
+      "best_fitness": 6.1942,
+      "best_cagr": 11.9592,
+      "best_max_dd": -11.53,
+      "avg_fitness": 5.4592
+    },
+    {
+      "generation": 14,
+      "best_fitness": 6.1942,
+      "best_cagr": 11.9592,
+      "best_max_dd": -11.53,
+      "avg_fitness": 5.6885
+    },
+    {
+      "generation": 15,
+      "best_fitness": 6.1942,
+      "best_cagr": 11.9592,
+      "best_max_dd": -11.53,
+      "avg_fitness": 5.9982
+    },
+    {
+      "generation": 16,
+      "best_fitness": 6.2143,
+      "best_cagr": 11.9794,
+      "best_max_dd": -11.53,
+      "avg_fitness": 5.9407
+    },
+    {
+      "generation": 17,
+      "best_fitness": 6.2144,
+      "best_cagr": 11.9794,
+      "best_max_dd": -11.53,
+      "avg_fitness": 5.9593
+    },
+    {
+      "generation": 18,
+      "best_fitness": 6.2144,
+      "best_cagr": 11.9794,
+      "best_max_dd": -11.53,
+      "avg_fitness": 6.0217
+    },
+    {
+      "generation": 19,
+      "best_fitness": 6.2565,
+      "best_cagr": 11.9066,
+      "best_max_dd": -11.3002,
+      "avg_fitness": 5.9393
+    },
+    {
+      "generation": 20,
+      "best_fitness": 6.2565,
+      "best_cagr": 11.9066,
+      "best_max_dd": -11.3002,
+      "avg_fitness": 5.9802
+    },
+    {
+      "generation": 21,
+      "best_fitness": 6.2741,
+      "best_cagr": 11.8986,
+      "best_max_dd": -11.249,
+      "avg_fitness": 6.0944
+    },
+    {
+      "generation": 22,
+      "best_fitness": 6.3354,
+      "best_cagr": 11.9616,
+      "best_max_dd": -11.2524,
+      "avg_fitness": 6.1656
+    },
+    {
+      "generation": 23,
+      "best_fitness": 6.3354,
+      "best_cagr": 11.9616,
+      "best_max_dd": -11.2524,
+      "avg_fitness": 6.1673
+    },
+    {
+      "generation": 24,
+      "best_fitness": 6.3903,
+      "best_cagr": 12.0031,
+      "best_max_dd": -11.2255,
+      "avg_fitness": 6.2029
+    },
+    {
+      "generation": 25,
+      "best_fitness": 6.3903,
+      "best_cagr": 12.0031,
+      "best_max_dd": -11.2255,
+      "avg_fitness": 6.1298
+    },
+    {
+      "generation": 26,
+      "best_fitness": 6.3978,
+      "best_cagr": 12.0012,
+      "best_max_dd": -11.2067,
+      "avg_fitness": 6.1614
+    },
+    {
+      "generation": 27,
+      "best_fitness": 6.4225,
+      "best_cagr": 12.0263,
+      "best_max_dd": -11.2076,
+      "avg_fitness": 6.2727
+    },
+    {
+      "generation": 28,
+      "best_fitness": 6.427,
+      "best_cagr": 12.0304,
+      "best_max_dd": -11.2067,
+      "avg_fitness": 6.2729
+    },
+    {
+      "generation": 29,
+      "best_fitness": 6.427,
+      "best_cagr": 12.0304,
+      "best_max_dd": -11.2067,
+      "avg_fitness": 6.224
+    },
+    {
+      "generation": 30,
+      "best_fitness": 6.4643,
+      "best_cagr": 12.1222,
+      "best_max_dd": -11.3158,
+      "avg_fitness": 6.1684
+    },
+    {
+      "generation": 31,
+      "best_fitness": 6.4643,
+      "best_cagr": 12.1222,
+      "best_max_dd": -11.3158,
+      "avg_fitness": 6.0505
+    },
+    {
+      "generation": 32,
+      "best_fitness": 6.4643,
+      "best_cagr": 12.1222,
+      "best_max_dd": -11.3158,
+      "avg_fitness": 6.269
+    },
+    {
+      "generation": 33,
+      "best_fitness": 6.4851,
+      "best_cagr": 12.1374,
+      "best_max_dd": -11.3046,
+      "avg_fitness": 6.1213
+    },
+    {
+      "generation": 34,
+      "best_fitness": 6.4851,
+      "best_cagr": 12.1374,
+      "best_max_dd": -11.3046,
+      "avg_fitness": 6.0138
+    },
+    {
+      "generation": 35,
+      "best_fitness": 6.4851,
+      "best_cagr": 12.1374,
+      "best_max_dd": -11.3046,
+      "avg_fitness": 6.2015
+    },
+    {
+      "generation": 36,
+      "best_fitness": 6.4857,
+      "best_cagr": 12.138,
+      "best_max_dd": -11.3046,
+      "avg_fitness": 6.1419
+    },
+    {
+      "generation": 37,
+      "best_fitness": 6.4914,
+      "best_cagr": 12.145,
+      "best_max_dd": -11.307,
+      "avg_fitness": 6.2911
+    },
+    {
+      "generation": 38,
+      "best_fitness": 6.4914,
+      "best_cagr": 12.145,
+      "best_max_dd": -11.307,
+      "avg_fitness": 6.1701
+    },
+    {
+      "generation": 39,
+      "best_fitness": 6.4914,
+      "best_cagr": 12.145,
+      "best_max_dd": -11.307,
+      "avg_fitness": 6.1823
+    },
+    {
+      "generation": 40,
+      "best_fitness": 6.5035,
+      "best_cagr": 12.1557,
+      "best_max_dd": -11.3046,
+      "avg_fitness": 6.3159
+    },
+    {
+      "generation": 41,
+      "best_fitness": 6.5082,
+      "best_cagr": 12.1599,
+      "best_max_dd": -11.3036,
+      "avg_fitness": 6.1525
+    },
+    {
+      "generation": 42,
+      "best_fitness": 6.5082,
+      "best_cagr": 12.1599,
+      "best_max_dd": -11.3036,
+      "avg_fitness": 6.2873
+    },
+    {
+      "generation": 43,
+      "best_fitness": 6.5082,
+      "best_cagr": 12.1599,
+      "best_max_dd": -11.3036,
+      "avg_fitness": 6.2254
+    },
+    {
+      "generation": 44,
+      "best_fitness": 6.5082,
+      "best_cagr": 12.1599,
+      "best_max_dd": -11.3036,
+      "avg_fitness": 6.1969
+    },
+    {
+      "generation": 45,
+      "best_fitness": 6.5141,
+      "best_cagr": 12.1664,
+      "best_max_dd": -11.3046,
+      "avg_fitness": 6.3087
+    },
+    {
+      "generation": 46,
+      "best_fitness": 6.5141,
+      "best_cagr": 12.1664,
+      "best_max_dd": -11.3046,
+      "avg_fitness": 6.3777
+    },
+    {
+      "generation": 47,
+      "best_fitness": 6.5141,
+      "best_cagr": 12.1664,
+      "best_max_dd": -11.3046,
+      "avg_fitness": 6.2153
+    },
+    {
+      "generation": 48,
+      "best_fitness": 6.5187,
+      "best_cagr": 12.1705,
+      "best_max_dd": -11.3036,
+      "avg_fitness": 6.4569
+    },
+    {
+      "generation": 49,
+      "best_fitness": 6.5188,
+      "best_cagr": 12.1706,
+      "best_max_dd": -11.3036,
+      "avg_fitness": 6.3239
+    },
+    {
+      "generation": 50,
+      "best_fitness": 6.5485,
+      "best_cagr": 12.2961,
+      "best_max_dd": -11.4951,
+      "avg_fitness": 6.3404
+    }
+  ],
+  "comparison": {
+    "ga_best": {
+      "cagr": 12.2961,
+      "total_ret": 78.3349,
+      "max_dd": -11.4951,
+      "sharpe": 0.7067
+    },
+    "grid_best": {
+      "cagr": 10.68,
+      "total_ret": 65.88,
+      "max_dd": -12.88,
+      "params": "sp30/sl15/semi-annual-10"
+    },
+    "v3_live": {
+      "cagr": 5.39,
+      "total_ret": 28.72,
+      "max_dd": -10.32,
+      "params": "sp20/sl15/annual-20/observe20"
+    },
+    "buy_hold": {
+      "cagr": 5.81,
+      "total_ret": 32.64,
+      "max_dd": -12.43
+    }
+  }
+}

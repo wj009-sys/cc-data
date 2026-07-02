@@ -14,20 +14,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `update_portfolio.py` | 每日自动更新脚本，Tushare API 获取行情，更新汇总+日报，信号检测 + 仪表盘同步 |
 | `portfolio-dashboard.html` | 投资仪表盘，Chart.js 可视化（内嵌数据数组 + 东方财富实时行情API） |
 | `generate_briefing.py` | 投资简报生成 + 企业微信推送（午间/收盘两种模式） |
-| `500万资产配置方案（优化版）.docx` | 原始资产配置方案文档 |
+| `400万资产配置方案（优化版）.docx` | 原始资产配置方案文档 |
 
 ### 其他文件
 
 | 目录/文件 | 说明 |
 |-----------|------|
-| `backtest_*.py` (7个) | 不同版本/参数的回测脚本 |
-| `gen_*_excel.py` (3个) | 回测结果导出 Excel 报表 |
+| `backtest_v3.py` | V3 权威回测脚本（+20%卖半/-15%止损/年度±20%） |
+| `backtest_sp_reentry.py` | 止盈后补仓策略对比（A/B/D 三方案） |
 | `check_circuit_breaker.py` | 熔断触发次数统计（2021-2025） |
-| `optimize_rules.py` | 规则排列组合全参数扫描优化器 |
-| `update_dashboard_rules.py` | 更新仪表盘纪律规则为V3版本 |
+| `ga_optimize.py` | 达尔文遗传算法优化器（种群60×50代，5参数连续优化） |
+| `optimize_rules.py` | 网格搜索全参数扫描优化器（150组合） |
+| `gen_v3_excel.py` / `gen_backtest_excel.py` / `gen_best_excel.py` | 回测结果导出 Excel 报表 |
 | `backfill_dates.py` | 日报数据回补工具 |
-| `*.json` (7个) | 各回测方案的结果存档 |
-| `*.xlsx` (4个) | 回测报表Excel |
+| `*.json` (5个) | 回测/优化结果存档 |
+| `*.xlsx` (2个) | 回测报表 + 主数据文件 |
+| `archive/` | 历史备份文件（V3备份/日报清理前备份） |
 | `.claude/scheduled_tasks.json` | 定时任务配置（午间/收盘简报） |
 
 ## Excel 结构
@@ -43,6 +45,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # 手动执行每日更新（Tushare行情 → Excel → 仪表盘同步）
 python update_portfolio.py
+
+# 运行 GA 遗传算法优化（种群60×50代，~17秒）
+python ga_optimize.py
 
 # 查看定时任务
 cat .claude/scheduled_tasks.json
@@ -98,14 +103,14 @@ python -c "exec(open('update_portfolio.py').read().replace('if __name__==\"__mai
 
 | JSON文件 | 对应脚本 | CAGR | 总收益 | 交易笔数 | 说明 |
 |----------|---------|------|--------|---------|------|
-| `buyhold_result.json` | — | 5.81% | 32.64% | 0 | 买入持有基准 |
-| `backtest_best_result.json` | `backtest_rules_best.py` | **7.05%** | 40.48% | 69 | V3最优(止盈+20%/止损-15%/观察20日) |
+| `ga_optimization_results.json` | `ga_optimize.py` | **12.30%** | 78.33% | 56 | 🧬 GA最优(止盈+31.5%卖69%/止损-15%/观察51日/年度±39%) |
+| `optimization_results.json` | `optimize_rules.py` | **10.68%** | 65.88% | 95 | 网格最优(参数sp30/sl15/半年10) |
+| `backtest_best_result.json` | `backtest_v3.py` | **7.05%** | 40.48% | 69 | V3最优(止盈+20%/止损-15%/观察20日/年度±20%) |
 | `backtest_sp_reentry.json` | `backtest_sp_reentry.py` | **6.66%** | 37.94% | 71 | 止盈后补仓方案A |
-| `backtest_rules_result.json` | `backtest_rules_v2.py` | 5.09% | 28.07% | 90 | V2阶梯止盈(7%/9%/12%) |
-| `backtest_precise_rules_result.json` | `backtest_precise_rules.py` | 0.18% | 0.88% | — | 极严格纪律 |
-| `optimization_results.json` | `optimize_rules.py` | **10.68%** | 65.88% | 95 | GA全组合最优(参数sp30/sl15/半年10) |
+| `buyhold_result.json` | — | 5.81% | 32.64% | 0 | 买入持有基准 |
 
 **GA优化方案 sheet** 中的"当前V3"(CAGR 5.39%)与 `backtest_best_result.json`(CAGR 7.05%) 参数不同：
 - GA sheet的"当前V3"是遗传算法迭代中的中间存档
 - `backtest_best_result.json` 是 V3修复版的最终回测结果
 - 当前投资纪律按 V3优化版 执行（`update_portfolio.py` 检测逻辑）
+- 🧬 GA 最优参数（止盈+31.5%卖69%/止损-15%/观察51日/年度±39%）回测 CAGR 12.30%，但尚未实装到 live 系统

@@ -273,9 +273,21 @@ def read_today_daily_changes(today_str: str) -> dict:
             if code_raw is None:
                 continue
             c = str(int(code_raw)) if isinstance(code_raw, float) else str(code_raw).strip()
+            raw_pct = ws.cell(row=row, column=8).value  # H: 涨跌幅（可能是字符串'-0.87%'或小数0.0106）
+            # 统一转为小数格式
+            if isinstance(raw_pct, str) and raw_pct.endswith('%'):
+                try:
+                    pct_val = float(raw_pct.replace('%', '')) / 100.0
+                except ValueError:
+                    pct_val = None
+            else:
+                try:
+                    pct_val = float(raw_pct) if raw_pct is not None else None
+                except (ValueError, TypeError):
+                    pct_val = None
             code_col[c] = {
                 "close": ws.cell(row=row, column=7).value,   # G: 收盘
-                "pct_chg": ws.cell(row=row, column=8).value, # H: 涨跌幅
+                "pct_chg": pct_val,
                 "pnl": ws.cell(row=row, column=10).value,    # J: 浮动盈亏
                 "pnl_pct": ws.cell(row=row, column=11).value, # K: 盈亏%
             }

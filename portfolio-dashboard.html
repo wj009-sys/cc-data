@@ -245,7 +245,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="logo-area">
       <div class="logo-icon">📊</div>
       <div>
-        <div class="page-title">400万资产配置组合 <span style="font-size:10px;color:var(--text-muted);font-weight:400">v2026.06.27-r6</span></div>
+        <div class="page-title">400万资产配置组合 <span style="font-size:10px;color:var(--text-muted);font-weight:400">v2026.07.02-r7</span></div>
         <div class="page-subtitle">投资仪表盘 · 实时行情驱动</div>
       </div>
     </div>
@@ -341,13 +341,13 @@ var STORAGE_KEY_LAST  = 'pf_last_snapshot_v4';
 
 var basePositions = [
   { code:'510300', name:'华泰柏瑞沪深300ETF', targetWeight:18.75, costPrice:4.885, qty:153800, cost:751313.0, cat:'沪深300', catColor:'#60a5fa' },
-  { code:'588050', name:'科创50ETF', targetWeight:6.25, costPrice:1.838, qty:60000, cost:110280.0, cat:'科创50', catColor:'#c084fc' },
+  { code:'588050', name:'科创50ETF', targetWeight:6.25, costPrice:1.838, qty:30000, cost:55140.0, cat:'科创50', catColor:'#c084fc' },
   { code:'159915', name:'易方达创业板ETF', targetWeight:6.25, costPrice:3.968, qty:63000, cost:249984.0, cat:'创业板', catColor:'#e879f9' },
   { code:'512890', name:'华泰柏瑞红利低波ETF', targetWeight:6.25, costPrice:1.15, qty:218000, cost:250700.0, cat:'红利低波', catColor:'#f472b6' },
   { code:'511380', name:'可转债ETF', targetWeight:12.5, costPrice:13.8644, qty:14500, cost:201033.8, cat:'可转债', catColor:'#fb923c' },
   { code:'511260', name:'国泰上证10年期国债ETF', targetWeight:12.5, costPrice:135.645, qty:3700, cost:501886.5, cat:'10年国债', catColor:'#34d399' },
   { code:'511010', name:'国泰上证5年期国债ETF', targetWeight:12.5, costPrice:141.2121, qty:3500, cost:494242.35, cat:'5年国债', catColor:'#2dd4bf' },
-  { code:'511360', name:'海富通中证短融ETF', targetWeight:6.25, costPrice:113.462, qty:2200, cost:249616.4, cat:'短融', catColor:'#22d3ee' },
+  { code:'511360', name:'海富通中证短融ETF', targetWeight:6.25, costPrice:113.4903, qty:2700, cost:306423.81, cat:'短融', catColor:'#22d3ee' },
   { code:'518880', name:'华安黄金ETF', targetWeight:18.75, costPrice:9.1196, qty:63800, cost:581830.48, cat:'黄金', catColor:'#fbbf24' }
 ];
 
@@ -376,7 +376,9 @@ var transactions = [
   { date:'2026-06-10', code:'511380', name:'可转债ETF', price:13.78, qty:7300, amount:100594.0 },
   { date:'2026-06-12', code:'518880', name:'华安黄金ETF', price:8.65, qty:8000, amount:69200.0 },
   { date:'2026-06-22', code:'510500', name:'中证500ETF', price:8.777, qty:-20000, amount:175540.0 },
-  { date:'2026-06-25', code:'518880', name:'华安黄金ETF', price:8.33, qty:8000, amount:66640.0 }
+  { date:'2026-06-25', code:'518880', name:'华安黄金ETF', price:8.33, qty:8000, amount:66640.0 },
+  { date:'2026-07-02', code:'588050', name:'科创50ETF', price:2.121, qty:-30000, amount:-63630.0 },
+  { date:'2026-07-02', code:'511360', name:'短融ETF', price:113.615, qty:500, amount:56807.5 }
 ];
 
 var disciplineRules = [
@@ -427,7 +429,8 @@ var SEED_DAILY = [
   { date:'2026-06-26', pnl:-30938.8, cumulative:-33921.03 },
   { date:'2026-06-29', pnl:22208.8, cumulative:-11712.23 },
   { date:'2026-06-30', pnl:0.0, cumulative:-11712.23 },
-  { date:'2026-07-01', pnl:15429.1, cumulative:3716.87 }
+  { date:'2026-07-01', pnl:15429.1, cumulative:3716.87 },
+  { date:'2026-07-02', pnl:-11430.0, cumulative:-7713.13 }
 ];
 
 // ============================================================
@@ -477,8 +480,9 @@ function fetchPrices(codes) {
 //  LOCAL STORAGE
 // ============================================================
 function loadDailyHistory() {
-  // 优先使用 localStorage 缓存，但合并 SEED_DAILY 中的新日期
-  // 这样 Python 端 sync_dashboard() 新增的日期能自动出现在图表中
+  // v2026.07.02-r7: SEED_DAILY（Python sync_dashboard 写入）是收盘价权威数据源
+  // localStorage 仅用于补充 SEED_DAILY 中不存在的日期（如当日盘中快照）
+  // 修复：实时价格 localStorage 覆盖 sync 权威数据导致累计盈亏偏离的 bug
   var cached = null;
   try {
     var raw = localStorage.getItem(STORAGE_KEY_DAILY);
@@ -488,36 +492,39 @@ function loadDailyHistory() {
     }
   } catch(e) {}
 
+  // 以 SEED_DAILY 为基础（权威数据优先）
+  var result = SEED_DAILY.slice();
+
   if (!cached) {
-    localStorage.setItem(STORAGE_KEY_DAILY, JSON.stringify(SEED_DAILY));
-    return SEED_DAILY.slice();
+    localStorage.setItem(STORAGE_KEY_DAILY, JSON.stringify(result));
+    return result;
   }
 
-  // 合并：以 localStorage 为基础，追加 SEED_DAILY 中不存在的新日期
-  var cachedDates = {};
-  cached.forEach(function(d) { cachedDates[d.date] = true; });
+  // 合并：SEED_DAILY 优先，追加 localStorage 中 SEED_DAILY 不存在的日期
+  var seedDates = {};
+  result.forEach(function(d) { seedDates[d.date] = true; });
 
   var hasNew = false;
-  for (var i = 0; i < SEED_DAILY.length; i++) {
-    if (!cachedDates[SEED_DAILY[i].date]) {
-      cached.push(SEED_DAILY[i]);
+  for (var i = 0; i < cached.length; i++) {
+    if (!seedDates[cached[i].date]) {
+      result.push(cached[i]);
       hasNew = true;
     }
   }
 
   if (hasNew) {
     // 按日期排序
-    cached.sort(function(a, b) { return a.date.localeCompare(b.date); });
+    result.sort(function(a, b) { return a.date.localeCompare(b.date); });
     // 重新计算累计盈亏
     var cum = 0;
-    for (var j = 0; j < cached.length; j++) {
-      cum = Math.round((cum + cached[j].pnl) * 100) / 100;
-      cached[j].cumulative = cum;
+    for (var j = 0; j < result.length; j++) {
+      cum = Math.round((cum + result[j].pnl) * 100) / 100;
+      result[j].cumulative = cum;
     }
-    localStorage.setItem(STORAGE_KEY_DAILY, JSON.stringify(cached));
+    localStorage.setItem(STORAGE_KEY_DAILY, JSON.stringify(result));
   }
 
-  return cached;
+  return result;
 }
 
 function saveDailyHistory(data) {
@@ -876,6 +883,10 @@ function recordDailySnapshot(currentCumulative) {
     return history;
   }
   var today = todayStr();
+  // v2026.07.02-r7: 如果今天已在 SEED_DAILY 中（sync_dashboard 写入的权威收盘数据），不覆盖
+  for (var si = 0; si < SEED_DAILY.length; si++) {
+    if (SEED_DAILY[si].date === today) return history;
+  }
   var existingIdx = -1;
   for (var i = 0; i < history.length; i++) {
     if (history[i].date === today) { existingIdx = i; break; }
