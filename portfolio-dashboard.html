@@ -340,15 +340,15 @@ var STORAGE_KEY_DAILY = 'pf_daily_pnl_v4';
 var STORAGE_KEY_LAST  = 'pf_last_snapshot_v4';
 
 var basePositions = [
-  { code:'510300', name:'华泰柏瑞沪深300ETF', targetWeight:18.75, costPrice:4.885, qty:153800, cost:751313.0, cat:'沪深300', catColor:'#60a5fa' },
-  { code:'588050', name:'科创50ETF', targetWeight:6.25, costPrice:1.838, qty:30000, cost:55140.0, cat:'科创50', catColor:'#c084fc' },
-  { code:'159915', name:'易方达创业板ETF', targetWeight:6.25, costPrice:3.968, qty:63000, cost:249984.0, cat:'创业板', catColor:'#e879f9' },
-  { code:'512890', name:'华泰柏瑞红利低波ETF', targetWeight:6.25, costPrice:1.15, qty:218000, cost:250700.0, cat:'红利低波', catColor:'#f472b6' },
-  { code:'511380', name:'可转债ETF', targetWeight:12.5, costPrice:13.8644, qty:14500, cost:201033.8, cat:'可转债', catColor:'#fb923c' },
-  { code:'511260', name:'国泰上证10年期国债ETF', targetWeight:12.5, costPrice:135.645, qty:3700, cost:501886.5, cat:'10年国债', catColor:'#34d399' },
-  { code:'511010', name:'国泰上证5年期国债ETF', targetWeight:12.5, costPrice:141.2121, qty:3500, cost:494242.35, cat:'5年国债', catColor:'#2dd4bf' },
-  { code:'511360', name:'海富通中证短融ETF', targetWeight:6.25, costPrice:113.4903, qty:2700, cost:306423.81, cat:'短融', catColor:'#22d3ee' },
-  { code:'518880', name:'华安黄金ETF', targetWeight:18.75, costPrice:9.1196, qty:63800, cost:581830.48, cat:'黄金', catColor:'#fbbf24' }
+  { code:'510300', name:'华泰柏瑞沪深300ETF', targetWeight:18.75, costPrice:4.885, closePrice:4.85, qty:153800, cost:751313.0, cat:'沪深300', catColor:'#60a5fa' },
+  { code:'588050', name:'科创50ETF', targetWeight:6.25, costPrice:1.838, closePrice:2.044, qty:30000, cost:55140.0, cat:'科创50', catColor:'#c084fc' },
+  { code:'159915', name:'易方达创业板ETF', targetWeight:6.25, costPrice:3.968, closePrice:4.036, qty:63000, cost:249984.0, cat:'创业板', catColor:'#e879f9' },
+  { code:'512890', name:'华泰柏瑞红利低波ETF', targetWeight:6.25, costPrice:1.15, closePrice:1.087, qty:218000, cost:250700.0, cat:'红利低波', catColor:'#f472b6' },
+  { code:'511380', name:'可转债ETF', targetWeight:12.5, costPrice:13.8644, closePrice:13.942, qty:14500, cost:201033.8, cat:'可转债', catColor:'#fb923c' },
+  { code:'511260', name:'国泰上证10年期国债ETF', targetWeight:12.5, costPrice:135.645, closePrice:134.766, qty:3700, cost:501886.5, cat:'10年国债', catColor:'#34d399' },
+  { code:'511010', name:'国泰上证5年期国债ETF', targetWeight:12.5, costPrice:141.2121, closePrice:140.695, qty:3500, cost:494242.35, cat:'5年国债', catColor:'#2dd4bf' },
+  { code:'511360', name:'海富通中证短融ETF', targetWeight:6.25, costPrice:113.462, closePrice:113.626, qty:2200, cost:249616.4, cat:'短融', catColor:'#22d3ee' },
+  { code:'518880', name:'华安黄金ETF', targetWeight:18.75, costPrice:9.1196, closePrice:8.475, qty:63800, cost:581830.48, cat:'黄金', catColor:'#fbbf24' }
 ];
 
 var transactions = [
@@ -377,8 +377,7 @@ var transactions = [
   { date:'2026-06-12', code:'518880', name:'华安黄金ETF', price:8.65, qty:8000, amount:69200.0 },
   { date:'2026-06-22', code:'510500', name:'中证500ETF', price:8.777, qty:-20000, amount:175540.0 },
   { date:'2026-06-25', code:'518880', name:'华安黄金ETF', price:8.33, qty:8000, amount:66640.0 },
-  { date:'2026-07-02', code:'588050', name:'科创50ETF', price:2.121, qty:-30000, amount:-63630.0 },
-  { date:'2026-07-02', code:'511360', name:'短融ETF', price:113.615, qty:500, amount:56807.5 }
+  { date:'2026-07-02', code:'588050', name:'科创50ETF', price:2.121, qty:-30000, amount:-63630.0 }
 ];
 
 var disciplineRules = [
@@ -422,15 +421,15 @@ var SEED_DAILY = [
   { date:'2026-06-16', pnl:60023.6, cumulative:-1304.51 },
   { date:'2026-06-17', pnl:18687.7, cumulative:17383.19 },
   { date:'2026-06-18', pnl:6064.9, cumulative:23448.09 },
-  { date:'2026-06-22', pnl:12066.5, cumulative:35514.59 },
-  { date:'2026-06-23', pnl:-47279.3, cumulative:-11764.71 },
-  { date:'2026-06-24', pnl:7232.2, cumulative:-4532.51 },
-  { date:'2026-06-25', pnl:1550.28, cumulative:-2982.23 },
-  { date:'2026-06-26', pnl:-30938.8, cumulative:-33921.03 },
-  { date:'2026-06-29', pnl:22208.8, cumulative:-11712.23 },
-  { date:'2026-06-30', pnl:0.0, cumulative:-11712.23 },
-  { date:'2026-07-01', pnl:15429.1, cumulative:3716.87 },
-  { date:'2026-07-02', pnl:-11430.0, cumulative:-7713.13 }
+  { date:'2026-06-22', pnl:14706.5, cumulative:38154.59 },
+  { date:'2026-06-23', pnl:-47279.3, cumulative:-9124.71 },
+  { date:'2026-06-24', pnl:7232.2, cumulative:-1892.51 },
+  { date:'2026-06-25', pnl:1550.28, cumulative:-342.23 },
+  { date:'2026-06-26', pnl:-30938.8, cumulative:-31281.03 },
+  { date:'2026-06-29', pnl:22208.8, cumulative:-9072.23 },
+  { date:'2026-06-30', pnl:15429.1, cumulative:6356.87 },
+  { date:'2026-07-01', pnl:-17111.0, cumulative:-10754.13 },
+  { date:'2026-07-02', pnl:-39960.5, cumulative:-50714.63 }
 ];
 
 // ============================================================
@@ -552,7 +551,9 @@ function saveLastSnapshot(snap) {
 function buildPositions(prices) {
   return basePositions.map(function(bp) {
     var quote = (prices && prices[bp.code]) ? prices[bp.code] : null;
-    var close = (quote && quote.price != null) ? quote.price : (bp.costPrice || 0);
+    // v2026.07.02-r7: API失败时用sync写入的收盘价，而非成本价（否则P&L全显示0）
+    var fallbackPrice = (bp.closePrice != null && bp.closePrice > 0) ? bp.closePrice : (bp.costPrice || 0);
+    var close = (quote && quote.price != null) ? quote.price : fallbackPrice;
     var changePct = quote ? quote.changePct : null;
     var marketValue = bp.qty > 0 ? Math.round(bp.qty * close) : 0;
     var pnl = bp.costPrice && bp.qty > 0 ? Math.round((close - bp.costPrice) * bp.qty) : 0;
@@ -918,10 +919,20 @@ function refreshData(showLoadingFlag) {
   var codes = basePositions.map(function(p) { return p.code; });
   return fetchPrices(codes).then(function(prices) {
     if (!prices) {
-      // API 失败：使用本地缓存，不执行 recordDailySnapshot 避免数据损坏
+      // API 失败：用 sync 写入的收盘价渲染完整页面，不执行 recordDailySnapshot
       updateStatusBar('error', '行情获取失败，显示本地数据');
       showLoading(false);
       var history = loadDailyHistory();
+      var lastSeedDate = history.length > 0 ? history[history.length - 1].date : getLastTradingDay();
+      updateDateBadge(lastSeedDate, false);
+      // v2026.07.02-r7: API 失败时也要渲染持仓和图表（用 closePrice 回退）
+      var fallbackPositions = buildPositions(null);
+      fallbackPositions = addWeightInfo(fallbackPositions);
+      var totalMv = fallbackPositions.length > 0 ? fallbackPositions[0].totalMv : 0;
+      renderStatsRow(fallbackPositions, totalMv);
+      renderPositionsTable(fallbackPositions);
+      renderPieChart(fallbackPositions);
+      renderBarChart(fallbackPositions);
       renderDailyPnlChart(history);
       return null;
     }
@@ -964,13 +975,17 @@ function refreshData(showLoadingFlag) {
     updateStatusBar('error', '行情获取失败，显示最近缓存数据 · ' + (err.message || '网络错误'));
     showLoading(false);
 
-    // 尝试用缓存数据渲染
-    var snapshot = loadLastSnapshot();
-    if (snapshot) {
-      updateDateBadge(snapshot.date || getLastTradingDay(), false);
-    }
-    // 用 localStorage 中的历史数据渲染图表
+    // 尝试用缓存数据渲染完整页面
     var history = loadDailyHistory();
+    var fallbackDate = history.length > 0 ? history[history.length - 1].date : getLastTradingDay();
+    updateDateBadge(fallbackDate, false);
+    var fallbackPositions = buildPositions(null);
+    fallbackPositions = addWeightInfo(fallbackPositions);
+    var totalMv = fallbackPositions.length > 0 ? fallbackPositions[0].totalMv : 0;
+    renderStatsRow(fallbackPositions, totalMv);
+    renderPositionsTable(fallbackPositions);
+    renderPieChart(fallbackPositions);
+    renderBarChart(fallbackPositions);
     renderDailyPnlChart(history);
     return null;
   });

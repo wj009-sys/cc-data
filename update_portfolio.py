@@ -581,11 +581,13 @@ def sync_dashboard():
         code = h["code"]
         cost_price = ws_sum.cell(row=row, column=8).value   # H: 成本价
         quantity = ws_sum.cell(row=row, column=9).value or 0  # I: 数量
+        close_price = ws_sum.cell(row=row, column=11).value   # K: 今日收盘价
         cost_value = round(cost_price * quantity, 2) if cost_price and quantity else 0
 
         meta = DASHBOARD_META.get(code, {})
         positions[code] = {
             "cost_price": cost_price,
+            "close_price": close_price,
             "quantity": quantity,
             "cost_value": cost_value,
             "displayName": meta.get("displayName", h["name"]),
@@ -600,10 +602,12 @@ def sync_dashboard():
         p = positions[h["code"]]
         cp = p["cost_price"]
         cp_str = f"{cp}" if cp else "null"
+        clp = p.get("close_price")
+        clp_str = f"{clp}" if clp else "null"
         line = (
             f"  {{ code:'{h['code']}', name:'{p['displayName']}', "
             f"targetWeight:{p['targetWeight']}, costPrice:{cp_str}, "
-            f"qty:{p['quantity']}, cost:{p['cost_value']}, "
+            f"closePrice:{clp_str}, qty:{p['quantity']}, cost:{p['cost_value']}, "
             f"cat:'{p['cat']}', catColor:'{p['catColor']}' }}"
         )
         pos_lines.append(line)
@@ -730,15 +734,23 @@ def sync_dashboard():
         daily_changes[d] = round(curr_total - prev_total, 2)
         prev_total = curr_total
 
-    # 合并：仅追加新日期，不覆盖已有 SEED_DAILY 条目
-    # BUGFIX(v2026.06.27): 日报6/1~6/18数据损坏不可靠，已有条目是已验证的种子数据
+    # v2026.07.02-r7: 日报 6/19 之后数据已清洁，以日报为权威覆盖已有条目
+    # 6/18 及之前的数据仍可能有损坏，保留现有 SEED_DAILY 不受日报影响
+    CORRUPTION_CUTOFF = '2026-06-19'
     existing_date_set = {e[0] for e in existing_entries}
+
+    # 日报中有、但 SEED_DAILY 没有的 → 新增
     all_raw = []
     for d in sorted_clean_dates:
         if d not in existing_date_set:
             all_raw.append((d, daily_changes[d], 0))
+
+    # 日报和 SEED_DAILY 都有的 → 6/19之后用日报覆盖，6/18之前保留 SEED_DAILY
     for d, pnl, cum in existing_entries:
-        all_raw.append((d, pnl, 0))
+        if d in sorted_clean_dates and d >= CORRUPTION_CUTOFF:
+            all_raw.append((d, daily_changes[d], 0))  # 日报覆盖
+        else:
+            all_raw.append((d, pnl, 0))  # 保留现有
 
     all_raw.sort(key=lambda x: x[0])
 
